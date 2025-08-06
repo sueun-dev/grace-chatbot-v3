@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-inter: "Inter", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter);
+}
+
+.box-shadow {
+  box-shadow: 0px 1px 3px 0px #19213d1a;
+}
+
+.btn-linear-gradient {
+  background: linear-gradient(
+    92.06deg,
+    #28aae1 -19.43%,
+    #0364b3 51.58%,
+    #012b4d 119.74%
+  );
+}
+
+.btn-shadow {
+  box-shadow: 0px 2.63px 1.31px 0px #ffffff38 inset,
+    0px -2.63px 0.39px 0px #0e387d2e inset, 0px 2.63px 6.56px 0px #1458c92b;
+}
+
+.custom-shadow {
+  box-shadow: 1px 2px 14px 0px #1088ff29;
+}
+.inner-shadow {
+  box-shadow: 0px 4px 68px 8px #fff5da3d inset;
+  box-shadow: 0px 2px 24px 0px #24a3dd14;
+}
+
+.drop-shadow {
+  box-shadow: 0px 4px 68px 8px #fff5da3d inset;
+  box-shadow: 0px 2px 24px 12px #e3e3e3;
 }
