@@ -46,7 +46,7 @@ const ChatList = ({
                 message.isUser ? "justify-end" : "justify-start"
               }`}
             >
-              <div className={`${message.isUser ? "w-fit" : "w-[90%]"}`}>
+              <div className={`${message.isUser ? "w-fit" : "w-full"}`}>
                 <ChatMessage
                   message={message}
                   isUser={message.isUser}

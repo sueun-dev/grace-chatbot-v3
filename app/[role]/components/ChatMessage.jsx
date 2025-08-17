@@ -6,7 +6,6 @@ import TextMessage from "./message-types/TextMessage";
 import LoadingMessage from "./message-types/LoadingMessage";
 import ResultsMessage from "./message-types/ResultsMessage";
 import ScenarioMessage from "./message-types/ScenarioMessage";
-import AlocoholPreventionTraining from "./message-types/AlocoholPreventionTraining";
 import ThankYouMessage from "./message-types/ThankYouMessage";
 
 const ChatMessage = ({
@@ -15,6 +14,7 @@ const ChatMessage = ({
   onAnswer,
   onOptionSelect,
   currentUser,
+  onGoHome,
 }) => {
   if (message.type === "loading") {
     return <LoadingMessage />;
@@ -45,13 +45,6 @@ const ChatMessage = ({
       return <ResultsMessage message={message} onContinue={onOptionSelect} />;
     case "scenario":
       return <ScenarioMessage message={message} onAnswer={onOptionSelect} />;
-    case "welcome-training":
-      return (
-        <AlocoholPreventionTraining
-          message={message}
-          onContinue={onOptionSelect}
-        />
-      );
     case "thank-you":
       return <ThankYouMessage message={message} onGoHome={onOptionSelect} />;
     case "text":

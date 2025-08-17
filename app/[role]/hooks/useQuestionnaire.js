@@ -82,7 +82,11 @@ export const useQuestionnaire = () => {
     }
   };
 
-  const addResultsMessage = (totalScore, setMessages) => {
+  const addResultsMessage = (
+    totalScore,
+    setMessages,
+    startScenarioLearning
+  ) => {
     const riskLevel = calculateRiskLevel(totalScore);
 
     const resultsMsg = {
@@ -96,12 +100,18 @@ export const useQuestionnaire = () => {
     };
 
     setMessages((prev) => [...prev, resultsMsg]);
+
+    // Automatically start scenario learning after a short delay
+    setTimeout(() => {
+      startScenarioLearning(riskLevel, setMessages);
+    }, 2000);
   };
 
   const handleQuestionnaireOptionSelect = async (
     option,
     setMessages,
-    setIsLoading
+    setIsLoading,
+    startScenarioLearning
   ) => {
     const currentQuestion = getQuestionById(
       questionnaireState.currentQuestionId
@@ -212,7 +222,7 @@ export const useQuestionnaire = () => {
       setMessages((prev) => prev.filter((msg) => msg.type !== "loading"));
 
       if (nextQuestionId === "assessment_results") {
-        addResultsMessage(newTotalScore, setMessages);
+        addResultsMessage(newTotalScore, setMessages, startScenarioLearning);
         setQuestionnaireState((prev) => ({ ...prev, isActive: false }));
       } else {
         addQuestionMessage(nextQuestionId, setMessages, setIsLoading);

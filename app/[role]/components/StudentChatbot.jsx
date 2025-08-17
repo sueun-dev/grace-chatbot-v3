@@ -1,16 +1,17 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Logo from "./Logo";
 import Image from "next/image";
 import Header from "./Header";
-import WelcomeSection from "./ui/WelcomeSection";
 import ChatList from "./ChatList";
 import clsx from "clsx";
 import { useChat } from "../hooks/useChat";
 import { useQuestionnaire } from "../hooks/useQuestionnaire";
 import { useScenarioLearning } from "../hooks/useScenarioLearning";
+import { useRouter } from "next/navigation";
 
 const StudentChatbot = () => {
+  const router = useRouter();
   const [showSidebar, setShowSidebar] = useState(false);
   const [showChatList, setShowChatList] = useState(false);
 
@@ -46,6 +47,12 @@ const StudentChatbot = () => {
     avatar: "https://github.com/shadcn.png",
   };
 
+  // Automatically start questionnaire when component mounts
+  useEffect(() => {
+    handleStartQuestionnaire();
+  }, []);
+
+  // Handler Functions
   const handleShowSidebar = () => {
     setShowSidebar(!showSidebar);
   };
@@ -80,12 +87,18 @@ const StudentChatbot = () => {
         currentStep: 0,
       });
       setShowChatList(false);
+      router.push("/");
       return;
     }
 
     // If questionnaire is active, handle questionnaire flow
     if (questionnaireState.isActive) {
-      handleQuestionnaireOptionSelect(option, setMessages, setIsLoading);
+      handleQuestionnaireOptionSelect(
+        option,
+        setMessages,
+        setIsLoading,
+        startScenarioLearning
+      );
       return;
     }
 
@@ -110,21 +123,14 @@ const StudentChatbot = () => {
         />
         {/* Chat Container */}
         <div className="flex-grow p-[40px] flex flex-col justify-center items-center overflow-hidden bg-[url('/bg-gradient.png')] bg-cover bg-center">
-          {showChatList ? (
-            <ChatList
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              onOptionSelect={handleOptionSelect}
-              isLoading={isLoading}
-              currentUser={currentUser}
-              pendingInteractiveMessage={pendingInteractiveMessage}
-            />
-          ) : (
-            <WelcomeSection
-              setShowChatList={setShowChatList}
-              startQuestionnaire={handleStartQuestionnaire}
-            />
-          )}
+          <ChatList
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            onOptionSelect={handleOptionSelect}
+            isLoading={isLoading}
+            currentUser={currentUser}
+            pendingInteractiveMessage={pendingInteractiveMessage}
+          />
         </div>
       </div>
     </div>

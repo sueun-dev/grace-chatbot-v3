@@ -1,6 +1,5 @@
 import Image from "next/image";
 import React from "react";
-import Button from "../Button";
 
 const ResultsMessage = ({ message, onContinue }) => {
   const { riskLevel, totalScore } = message;
@@ -78,16 +77,6 @@ const ResultsMessage = ({ message, onContinue }) => {
               {riskLevel.recommendation}
             </p>
           </div>
-        </div>
-
-        {/* Continue Button */}
-        <div className="flex justify-center mt-[16px]">
-          <Button
-            onClick={() => onContinue("start_training")}
-            className="btn-linear-gradient btn-shadow"
-          >
-            Start Training
-          </Button>
         </div>
       </div>
     </div>

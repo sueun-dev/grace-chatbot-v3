@@ -44,18 +44,11 @@ export const useScenarioLearning = () => {
         riskLevel: riskLevel,
       },
       completedScenarios: [],
-      currentStep: 0,
+      currentStep: 1, // Start directly at step 1 (first scenario content)
     });
 
-    // Add welcome to training message
-    const welcomeMsg = {
-      id: Date.now(),
-      type: "welcome-training",
-      timestamp: generateTimestamp(),
-      isUser: false,
-    };
-
-    setMessages((prev) => [...prev, welcomeMsg]);
+    // Directly show the first scenario content instead of welcome message
+    showScenarioContent(scenarioKey, 1, setMessages);
   };
 
   const showScenarioContent = (scenarioKey, step, setMessages) => {
@@ -141,18 +134,7 @@ export const useScenarioLearning = () => {
       }
     }
 
-    // Handle welcome to training continue button
-    if (
-      option === "continue_welcome" &&
-      scenarioState.isActive &&
-      scenarioState.currentStep === 0
-    ) {
-      setScenarioState((prev) => ({ ...prev, currentStep: 1 }));
-      showScenarioContent(scenarioState.currentScenario.key, 1, setMessages);
-      return true;
-    }
-
-    // Handle Start Training button click (from ResultsMessage)
+    // Handle Start Training button click (from ResultsMessage) - this should no longer be needed
     if (option === "start_training") {
       return "start_training";
     }

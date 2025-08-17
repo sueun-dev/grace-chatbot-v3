@@ -7,8 +7,10 @@ import clsx from "clsx";
 import { useQuestionnaire } from "../hooks/useQuestionnaire";
 import { useScenarioLearning } from "../hooks/useScenarioLearning";
 import { useChat } from "../hooks/useChat";
+import { useRouter } from "next/navigation";
 
 const AiChatbot = () => {
+  const router = useRouter();
   const [showSidebar, setShowSidebar] = useState(false);
   const [showChatList, setShowChatList] = useState(true); // Set to true by default
 
@@ -84,12 +86,18 @@ const AiChatbot = () => {
         currentStep: 0,
       });
       setShowChatList(false);
+      router.push("/");
       return;
     }
 
     // If questionnaire is active, handle questionnaire flow
     if (questionnaireState.isActive) {
-      handleQuestionnaireOptionSelect(option, setMessages, setIsLoading);
+      handleQuestionnaireOptionSelect(
+        option,
+        setMessages,
+        setIsLoading,
+        startScenarioLearning
+      );
       return;
     }
 
