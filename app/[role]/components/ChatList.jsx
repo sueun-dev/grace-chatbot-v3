@@ -40,14 +40,22 @@ const ChatList = ({
         {/* Chat Messages */}
         <div className="flex flex-col gap-[16px]">
           {messages.map((message) => (
-            <ChatMessage
+            <div
               key={message.id}
-              message={message}
-              isUser={message.isUser}
-              onAnswer={onOptionSelect}
-              onOptionSelect={onOptionSelect}
-              currentUser={currentUser}
-            />
+              className={`flex ${
+                message.isUser ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div className={`${message.isUser ? "w-fit" : "w-[90%]"}`}>
+                <ChatMessage
+                  message={message}
+                  isUser={message.isUser}
+                  onAnswer={onOptionSelect}
+                  onOptionSelect={onOptionSelect}
+                  currentUser={currentUser}
+                />
+              </div>
+            </div>
           ))}
           <div ref={messagesEndRef} />
         </div>

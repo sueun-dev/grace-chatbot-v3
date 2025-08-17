@@ -52,18 +52,6 @@ const ResultsMessage = ({ message, onContinue }) => {
             </h2>
           </div>
 
-          {/* Score Display */}
-          <div className="mb-[16px] p-[12px] bg-white rounded-[8px] border border-[#F0F2F5]">
-            <div className="flex justify-between items-center">
-              <span className="text-[#666F8D] font-medium text-[14px]">
-                Total Score:
-              </span>
-              <span className="text-[#19213D] font-bold text-[18px]">
-                {totalScore} points
-              </span>
-            </div>
-          </div>
-
           {/* Risk Level */}
           <div
             className={`mb-[16px] p-[16px] rounded-[8px] border-2 ${getRiskLevelColor(
