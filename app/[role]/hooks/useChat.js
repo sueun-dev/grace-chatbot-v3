@@ -18,7 +18,15 @@ export const useChat = () => {
     );
   };
 
-  const handleSendMessage = async (userMessage) => {
+  const handleSendMessage = async (userMessage, handleUserInput = null) => {
+    // Check if scenario simulation is waiting for input
+    if (handleUserInput) {
+      const simulationHandled = handleUserInput(userMessage, setMessages);
+      if (simulationHandled) {
+        return;
+      }
+    }
+
     // Don't allow new messages if there's a pending interactive message
     if (pendingInteractiveMessage) {
       return;

@@ -111,7 +111,8 @@ export const useQuestionnaire = () => {
     option,
     setMessages,
     setIsLoading,
-    startScenarioLearning
+    startScenarioLearning,
+    startScenarioSimulation
   ) => {
     const currentQuestion = getQuestionById(
       questionnaireState.currentQuestionId

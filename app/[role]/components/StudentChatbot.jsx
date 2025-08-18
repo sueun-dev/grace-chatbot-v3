@@ -9,11 +9,12 @@ import { useChat } from "../hooks/useChat";
 import { useQuestionnaire } from "../hooks/useQuestionnaire";
 import { useScenarioLearning } from "../hooks/useScenarioLearning";
 import { useRouter } from "next/navigation";
+import { useScenarioSimulation } from "../hooks/useScenarioSimulation";
 
 const StudentChatbot = () => {
   const router = useRouter();
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [showChatList, setShowChatList] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showChatList, setShowChatList] = useState(true);
 
   // Custom hooks
   const {
@@ -42,6 +43,14 @@ const StudentChatbot = () => {
     resetScenarioState,
   } = useScenarioLearning();
 
+  const {
+    simulationState,
+    startScenarioSimulation,
+    handleSimulationOptionSelect,
+    handleUserInput,
+    resetSimulationState,
+  } = useScenarioSimulation();
+
   const currentUser = {
     name: "John Doe",
     avatar: "https://github.com/shadcn.png",
@@ -62,8 +71,24 @@ const StudentChatbot = () => {
   };
 
   const handleOptionSelect = async (option) => {
+    // Normalize simple option payloads coming from UI components
+    const normalized =
+      option && typeof option === "object" && (option.type || option.value)
+        ? option.type || option.value
+        : option;
+
+    // Handle scenario simulation responses
+    const simulationResult = handleSimulationOptionSelect(option, setMessages);
+    if (simulationResult === true) {
+      return;
+    }
+
     // Handle scenario learning responses
-    const scenarioResult = handleScenarioOptionSelect(option, setMessages);
+    const scenarioResult = handleScenarioOptionSelect(
+      option,
+      setMessages,
+      startScenarioSimulation
+    );
     if (scenarioResult === true) {
       return;
     } else if (scenarioResult === "start_training") {
@@ -75,10 +100,11 @@ const StudentChatbot = () => {
     }
 
     // Handle thank you go home button
-    if (option === "go_home") {
+    if (normalized === "go_home") {
       // Reset to welcome screen
       resetChat();
       resetScenarioState();
+      resetSimulationState();
       setQuestionnaireState({
         isActive: false,
         currentQuestionId: null,
@@ -97,7 +123,8 @@ const StudentChatbot = () => {
         option,
         setMessages,
         setIsLoading,
-        startScenarioLearning
+        startScenarioLearning,
+        startScenarioSimulation
       );
       return;
     }
@@ -125,11 +152,14 @@ const StudentChatbot = () => {
         <div className="flex-grow p-[40px] flex flex-col justify-center items-center overflow-hidden bg-[url('/bg-gradient.png')] bg-cover bg-center">
           <ChatList
             messages={messages}
-            onSendMessage={handleSendMessage}
+            onSendMessage={(message) =>
+              handleSendMessage(message, handleUserInput)
+            }
             onOptionSelect={handleOptionSelect}
             isLoading={isLoading}
             currentUser={currentUser}
             pendingInteractiveMessage={pendingInteractiveMessage}
+            scenarioMode={simulationState.waitingForInput}
           />
         </div>
       </div>

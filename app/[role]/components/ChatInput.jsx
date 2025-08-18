@@ -6,11 +6,12 @@ const ChatInput = ({
   onSendMessage,
   disabled = false,
   pendingInteractiveMessage = false,
+  scenarioMode = false,
 }) => {
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
-    if (message.trim() && onSendMessage && !pendingInteractiveMessage) {
+    if (message.trim() && onSendMessage && scenarioMode) {
       onSendMessage(message.trim());
       setMessage("");
     }
@@ -30,10 +31,12 @@ const ChatInput = ({
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        disabled={disabled}
-        className="w-full rounded-[8px] p-[12px] text-[14px] text-[#666F8D] font-normal leading-[150%] outline-none border-none disabled:opacity-50"
+        disabled={disabled || !scenarioMode}
+        className="disabled:cursor-not-allowed w-full rounded-[8px] p-[12px] text-[14px] text-[#666F8D] font-normal leading-[150%] outline-none border-none disabled:opacity-50"
         placeholder={
-          pendingInteractiveMessage
+          scenarioMode
+            ? "Type your response to the scenario..."
+            : pendingInteractiveMessage
             ? "Please respond to the question above..."
             : "Type your message here..."
         }
@@ -41,7 +44,7 @@ const ChatInput = ({
       <Button
         className="flex items-center gap-[8px] self-end"
         onClick={handleSend}
-        disabled={!message.trim() || disabled}
+        disabled={!message.trim() || disabled || !scenarioMode}
       >
         <Send size={12} />
         <span>Send Message</span>

@@ -641,3 +641,42 @@ export const scenarioQuestions = {
     ],
   },
 };
+
+// Scenario Simulation and Practice Data
+export const scenarioSimulations = {
+  peer_pressure_party: {
+    title: "Scenario 1: Peer Pressure at a Party",
+    description:
+      "You're at a party, hanging out with friends, when someone passes you a drink and says:",
+    prompt: "Come on, just one won't hurt!",
+    appropriateExample: "I'm good. I'm not drinking tonight.",
+    inappropriateExamples: ["Accepting the drink or avoiding the question"],
+    scenarioKey: "peer_pressure_party",
+  },
+  pre_game_event: {
+    title: "Scenario 2: Friends Planning to Pre-Game Before an Event",
+    description:
+      "Your friends say they're going to pre-game before the concert and ask if you're in. One says:",
+    prompt: "It'll be more fun if you're not the only sober one.",
+    appropriateExample: "Let's just get food before instead.",
+    inappropriateExamples: ["Saying yes or giving in to pressure"],
+    scenarioKey: "pre_game_event",
+  },
+  romantic_interest: {
+    title: "Scenario 3: Being Offered a Drink by a Romantic Interest",
+    description: "You're on a first date. They order drinks and say:",
+    prompt: "Let's have some fun tonight!",
+    additionalContext: "But you weren't planning to drink.",
+    appropriateExample: "I don't really drink much, but cheers to you.",
+    inappropriateExamples: ["Giving in to avoid awkwardness"],
+    scenarioKey: "romantic_interest",
+  },
+  stressful_week: {
+    title: "Scenario 4: After a Stressful Week",
+    description: "It's been a long week. A friend says:",
+    prompt: "Let's just drink and forget everything—come on, you deserve it.",
+    appropriateExample: "I just want a quiet night—maybe next time.",
+    inappropriateExamples: ["Agreeing just to cope"],
+    scenarioKey: "stressful_week",
+  },
+};

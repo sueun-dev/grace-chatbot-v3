@@ -10,6 +10,7 @@ const ChatList = ({
   isLoading,
   currentUser,
   pendingInteractiveMessage,
+  scenarioMode = false,
 }) => {
   const messagesEndRef = useRef(null);
 
@@ -46,7 +47,9 @@ const ChatList = ({
                 message.isUser ? "justify-end" : "justify-start"
               }`}
             >
-              <div className={`${message.isUser ? "w-fit" : "w-full"}`}>
+              <div
+                className={`${message.isUser ? "w-fit" : "w-full md:w-[80%]"}`}
+              >
                 <ChatMessage
                   message={message}
                   isUser={message.isUser}
@@ -63,8 +66,9 @@ const ChatList = ({
       {/* Chat Input */}
       <ChatInput
         onSendMessage={onSendMessage}
-        disabled={isLoading || pendingInteractiveMessage}
+        disabled={isLoading}
         pendingInteractiveMessage={pendingInteractiveMessage}
+        scenarioMode={scenarioMode}
       />
     </div>
   );

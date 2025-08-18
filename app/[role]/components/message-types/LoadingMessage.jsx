@@ -3,7 +3,7 @@ import React from "react";
 
 const LoadingMessage = () => {
   return (
-    <div className="flex items-center gap-[12px] border-[2px] border-[#F0F2F5] box-shadow rounded-[16px] p-[24px]">
+    <div className="flex items-center gap-[12px] border-[2px] border-[#F0F2F5] box-shadow rounded-[16px] p-[24px] bg-white">
       <div className="min-w-[24px] min-h-[24px] rounded-full self-start">
         <Image src={"/element.png"} alt="element" width={24} height={24} />
       </div>

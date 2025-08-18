@@ -6,6 +6,8 @@ import TextMessage from "./message-types/TextMessage";
 import LoadingMessage from "./message-types/LoadingMessage";
 import ResultsMessage from "./message-types/ResultsMessage";
 import ScenarioMessage from "./message-types/ScenarioMessage";
+import ScenarioSimulationMessage from "./message-types/ScenarioSimulationMessage";
+import MotivationalMessage from "./message-types/MotivationalMessage";
 import ThankYouMessage from "./message-types/ThankYouMessage";
 
 const ChatMessage = ({
@@ -45,6 +47,15 @@ const ChatMessage = ({
       return <ResultsMessage message={message} onContinue={onOptionSelect} />;
     case "scenario":
       return <ScenarioMessage message={message} onAnswer={onOptionSelect} />;
+    case "scenario-simulation":
+      return (
+        <ScenarioSimulationMessage
+          message={message}
+          onAnswer={onOptionSelect}
+        />
+      );
+    case "motivational":
+      return <MotivationalMessage message={message} />;
     case "thank-you":
       return <ThankYouMessage message={message} onGoHome={onOptionSelect} />;
     case "text":

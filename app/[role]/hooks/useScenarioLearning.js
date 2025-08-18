@@ -81,7 +81,7 @@ export const useScenarioLearning = () => {
     setMessages((prev) => [...prev, questionMsg]);
   };
 
-  const handleScenarioComplete = (setMessages) => {
+  const handleScenarioComplete = (setMessages, startScenarioSimulation) => {
     setScenarioState((prev) => ({
       ...prev,
       completedScenarios: [
@@ -93,18 +93,31 @@ export const useScenarioLearning = () => {
       currentStep: 0,
     }));
 
-    // Show thank you message
-    const thankYouMsg = {
+    // Show completion message and then start scenario simulation
+    const completionMsg = {
       id: Date.now(),
-      type: "thank-you",
+      type: "text",
+      content:
+        "Great! You've completed the learning section. Now let's practice what you've learned with some real-life scenarios.",
       timestamp: generateTimestamp(),
       isUser: false,
     };
 
-    setMessages((prev) => [...prev, thankYouMsg]);
+    setMessages((prev) => [...prev, completionMsg]);
+
+    // Start scenario simulation after a delay
+    setTimeout(() => {
+      if (startScenarioSimulation) {
+        startScenarioSimulation(setMessages);
+      }
+    }, 3000);
   };
 
-  const handleScenarioOptionSelect = (option, setMessages) => {
+  const handleScenarioOptionSelect = (
+    option,
+    setMessages,
+    startScenarioSimulation
+  ) => {
     // Handle scenario learning responses
     if (option && typeof option === "object" && option.type) {
       if (option.type === "continue_scenario") {
@@ -128,7 +141,7 @@ export const useScenarioLearning = () => {
           );
         } else if (scenarioState.currentStep === 4) {
           setScenarioState((prev) => ({ ...prev, currentStep: 5 }));
-          handleScenarioComplete(setMessages);
+          handleScenarioComplete(setMessages, startScenarioSimulation);
         }
         return true;
       }
