@@ -24,6 +24,8 @@ const ResultsMessage = ({ message, onContinue }) => {
     return "🔵";
   };
 
+  return null;
+
   return (
     <div className="flex items-start gap-[12px] border-[2px] border-[#F0F2F5] box-shadow rounded-[16px] p-[24px] bg-white">
       <div className="min-w-[24px] min-h-[24px] rounded-full self-start">

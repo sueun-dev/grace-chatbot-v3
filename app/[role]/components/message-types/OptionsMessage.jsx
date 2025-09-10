@@ -7,11 +7,13 @@ import { ArrowRight } from "lucide-react";
 const OptionsMessage = ({ message, onOptionSelect }) => {
   const [isAnswered, setIsAnswered] = useState(false);
   const [selectedOption, setSelectedOption] = useState("");
+  console.log("🚀 ~ OptionsMessage ~ selectedOption:", selectedOption);
 
   const handleOptionSelect = (option) => {
     if (onOptionSelect) {
       onOptionSelect(option);
       setIsAnswered(true);
+      setSelectedOption(option.value || option);
     }
   };
 
@@ -87,25 +89,20 @@ const OptionsMessage = ({ message, onOptionSelect }) => {
                 const optionText = isOptionObject ? option.text : option;
                 const isFirstOption = index === 0;
 
-                return isFirstOption ? (
+                return (
                   <Button
                     key={index}
                     disabled={isAnswered}
                     onClick={() => handleOptionSelect(option)}
                     className="flex items-center gap-[8px]"
+                    isActive={
+                      selectedOption === option.value ||
+                      selectedOption === option
+                    }
                   >
                     {optionText}
                     <ArrowRight size={12} />
                   </Button>
-                ) : (
-                  <button
-                    key={index}
-                    disabled={isAnswered}
-                    onClick={() => handleOptionSelect(option)}
-                    className="px-[16px] py-[8px] rounded-[8px] border-[1px] border-[#F0F2F5] bg-white text-[#666F8D] font-medium text-[12px] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {optionText}
-                  </button>
                 );
               })}
             </div>

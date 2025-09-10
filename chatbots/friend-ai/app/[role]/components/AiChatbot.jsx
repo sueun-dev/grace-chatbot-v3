@@ -51,8 +51,8 @@ const AiChatbot = () => {
   } = useScenarioSimulation();
 
   const currentUser = {
-    name: "John Doe",
-    avatar: "https://github.com/shadcn.png",
+    name: "User",
+    avatar: "/user-avatar-blue.png",
   };
 
   // Automatically start questionnaire when component mounts
