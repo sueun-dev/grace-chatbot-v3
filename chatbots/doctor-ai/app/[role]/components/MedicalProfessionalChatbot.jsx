@@ -51,17 +51,13 @@ const MedicalProfessionalChatbot = () => {
     handleUserInput,
     resetSimulationState,
   } = useScenarioSimulationEnhanced();
-  
-  const {
-    isFreeChatActive,
-    startFreeChat,
-    sendMessageToAI,
-    endFreeChat,
-  } = useFreeChat();
+
+  const { isFreeChatActive, startFreeChat, sendMessageToAI, endFreeChat } =
+    useFreeChat();
 
   const currentUser = {
-    name: "John Doe",
-    avatar: "https://github.com/shadcn.png",
+    name: "User",
+    avatar: "/user-avatar-blue.png",
   };
 
   // Automatically start questionnaire when component mounts
@@ -69,8 +65,8 @@ const MedicalProfessionalChatbot = () => {
     // Log chatbot page visit
     logAction({
       actionType: ACTION_TYPES.PAGE_VISITED,
-      actionDetails: 'User entered AI chatbot page',
-      pageVisited: 'ai-chatbot'
+      actionDetails: "User entered AI chatbot page",
+      pageVisited: "ai-chatbot",
     });
     handleStartQuestionnaire();
   }, []);
@@ -82,12 +78,12 @@ const MedicalProfessionalChatbot = () => {
 
   const handleStartQuestionnaire = async () => {
     startQuestionnaire(setMessages, setShowChatList, setIsLoading);
-    
+
     // Log questionnaire start
     await logAction({
       actionType: ACTION_TYPES.QUESTIONNAIRE_STARTED,
-      actionDetails: 'Questionnaire started',
-      pageVisited: 'ai-chatbot'
+      actionDetails: "Questionnaire started",
+      pageVisited: "ai-chatbot",
     });
   };
 
@@ -97,13 +93,13 @@ const MedicalProfessionalChatbot = () => {
       option && typeof option === "object" && (option.type || option.value)
         ? option.type || option.value
         : option;
-    
+
     // Log option selection
     await logAction({
       actionType: ACTION_TYPES.OPTION_SELECTED,
       actionDetails: `Option selected: ${JSON.stringify(option)}`,
       optionSelected: normalized,
-      pageVisited: 'ai-chatbot'
+      pageVisited: "ai-chatbot",
     });
 
     // Handle free chat start

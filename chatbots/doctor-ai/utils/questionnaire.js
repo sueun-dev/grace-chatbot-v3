@@ -56,7 +56,7 @@ export const QUESTIONNAIRE_SCHEMA = {
         "Thanks for sharing! Even if you don't drink, this assessment can help you learn more about alcohol risks and peer influences. Would you like to continue?",
       options: [
         { id: "yes", text: "Yes, let's do it!", value: "yes" },
-        { id: "no", text: "No, I just want general information", value: "no" },
+        // { id: "no", text: "No, I just want general information", value: "no" },
       ],
       nextQuestion: {
         yes: "drinking_frequency",
@@ -297,11 +297,11 @@ export const QUESTIONNAIRE_SCHEMA = {
           text: "Maybe, I'm open to learning more",
           value: "maybe",
         },
-        {
-          id: "no",
-          text: "No, I just want general information for now",
-          value: "no",
-        },
+        // {
+        //   id: "no",
+        //   text: "No, I just want general information for now",
+        //   value: "no",
+        // },
       ],
       nextQuestion: {
         yes: "assessment_results",

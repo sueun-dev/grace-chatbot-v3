@@ -45,7 +45,7 @@ export const useQuestionnaire = () => {
         "Hello! I'm Dr. Sky, here to provide guidance on alcohol awareness and healthier choices. Before we begin, can I ask a couple of quick questions?",
       options: [
         { id: "yes", text: "Yes, let's start", value: "yes" },
-        { id: "no", text: "No, thanks", value: "no" },
+        // { id: "no", text: "No, thanks", value: "no" },
       ],
       timestamp: generateTimestamp(),
       isUser: false,

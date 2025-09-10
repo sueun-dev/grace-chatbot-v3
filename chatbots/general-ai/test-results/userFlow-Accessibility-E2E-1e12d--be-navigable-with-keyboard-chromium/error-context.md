@@ -2,57 +2,57 @@
 
 ```yaml
 - generic [active] [ref=e1]:
-  - generic [ref=e3]:
-    - img "logo" [ref=e7]
-    - generic [ref=e8]:
-      - generic [ref=e9]:
-        - button [ref=e10]:
-          - img [ref=e11]
-        - heading "Chats" [level=1] [ref=e14]
-      - generic [ref=e16]:
-        - generic [ref=e17]:
-          - generic [ref=e20]: Today 07:47 PM
-          - generic [ref=e22]:
-            - generic [ref=e25]:
-              - img "element" [ref=e27]
-              - generic [ref=e28]:
-                - generic [ref=e29]:
-                  - heading "Sky" [level=3] [ref=e30]
-                  - generic [ref=e32]: 07:47 PM
-                - generic [ref=e33]:
-                  - paragraph [ref=e34]: Hello! I'm Dr. Sky, here to provide guidance on alcohol awareness and healthier choices. Before we begin, can I ask a couple of quick questions?
-                  - generic [ref=e35]:
-                    - button "Yes, let's start" [disabled] [ref=e36]:
-                      - text: Yes, let's start
-                      - img [ref=e37]
-                    - button "No, thanks" [disabled] [ref=e39]
-            - generic [ref=e42]:
-              - img "element" [ref=e44]
-              - generic [ref=e45]:
-                - generic [ref=e46]:
-                  - heading "John Doe" [level=3] [ref=e47]
-                  - generic [ref=e49]: 07:47 PM
-                - paragraph [ref=e51]: Yes, let's start
-            - generic [ref=e54]:
-              - img "element" [ref=e56]
-              - generic [ref=e57]:
-                - generic [ref=e58]:
-                  - heading "Sky" [level=3] [ref=e59]
-                  - generic [ref=e61]: 07:47 PM
-                - generic [ref=e62]:
-                  - paragraph [ref=e63]: Are you between the ages of 18 and 20?
-                  - generic [ref=e64]:
-                    - button "Yes" [ref=e65] [cursor=pointer]:
-                      - text: "Yes"
-                      - img [ref=e66] [cursor=pointer]
-                    - button "No" [ref=e68]
-        - generic [ref=e69]:
-          - textbox "Type your message here..." [disabled] [ref=e70]
-          - button "Send Message" [disabled] [ref=e71]:
-            - img [ref=e72]
-            - generic [ref=e75]: Send Message
-  - region "Notifications alt+T"
-  - button "Open Next.js Dev Tools" [ref=e81] [cursor=pointer]:
-    - img [ref=e82] [cursor=pointer]
-  - alert [ref=e85]
+    - generic [ref=e3]:
+        - img "logo" [ref=e7]
+        - generic [ref=e8]:
+            - generic [ref=e9]:
+                - button [ref=e10]:
+                    - img [ref=e11]
+                - heading "Chats" [level=1] [ref=e14]
+            - generic [ref=e16]:
+                - generic [ref=e17]:
+                    - generic [ref=e20]: Today 07:47 PM
+                    - generic [ref=e22]:
+                        - generic [ref=e25]:
+                            - img "element" [ref=e27]
+                            - generic [ref=e28]:
+                                - generic [ref=e29]:
+                                    - heading "Sky" [level=3] [ref=e30]
+                                    - generic [ref=e32]: 07:47 PM
+                                - generic [ref=e33]:
+                                    - paragraph [ref=e34]: Hello! I'm Dr. Sky, here to provide guidance on alcohol awareness and healthier choices. Before we begin, can I ask a couple of quick questions?
+                                    - generic [ref=e35]:
+                                        - button "Yes, let's start" [disabled] [ref=e36]:
+                                            - text: Yes, let's start
+                                            - img [ref=e37]
+                                        - button "No, thanks" [disabled] [ref=e39]
+                        - generic [ref=e42]:
+                            - img "element" [ref=e44]
+                            - generic [ref=e45]:
+                                - generic [ref=e46]:
+                                    - heading "User" [level=3] [ref=e47]
+                                    - generic [ref=e49]: 07:47 PM
+                                - paragraph [ref=e51]: Yes, let's start
+                        - generic [ref=e54]:
+                            - img "element" [ref=e56]
+                            - generic [ref=e57]:
+                                - generic [ref=e58]:
+                                    - heading "Sky" [level=3] [ref=e59]
+                                    - generic [ref=e61]: 07:47 PM
+                                - generic [ref=e62]:
+                                    - paragraph [ref=e63]: Are you between the ages of 18 and 20?
+                                    - generic [ref=e64]:
+                                        - button "Yes" [ref=e65] [cursor=pointer]:
+                                            - text: "Yes"
+                                            - img [ref=e66] [cursor=pointer]
+                                        - button "No" [ref=e68]
+                - generic [ref=e69]:
+                    - textbox "Type your message here..." [disabled] [ref=e70]
+                    - button "Send Message" [disabled] [ref=e71]:
+                        - img [ref=e72]
+                        - generic [ref=e75]: Send Message
+    - region "Notifications alt+T"
+    - button "Open Next.js Dev Tools" [ref=e81] [cursor=pointer]:
+        - img [ref=e82] [cursor=pointer]
+    - alert [ref=e85]
 ```
