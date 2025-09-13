@@ -8,7 +8,7 @@ export const QUESTIONNAIRE_SCHEMA = {
     {
       id: "age_check",
       type: "options",
-      content: "Are you between the ages of 18 and 20?",
+      content: "Are you between the ages of 21 and 25?",
       options: [
         { id: "yes", text: "Yes", value: "yes" },
         { id: "no", text: "No", value: "no" },

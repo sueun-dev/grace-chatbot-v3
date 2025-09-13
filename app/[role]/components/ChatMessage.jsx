@@ -27,8 +27,8 @@ const ChatMessage = ({
       <TextMessage
         message={message}
         isUser={isUser}
-        icon={currentUser?.avatar || "/user-avatar-blue.png"}
-        userName={currentUser?.name || "You"}
+        // icon={currentUser?.avatar || "/user-avatar-blue.png"}
+        // userName={currentUser?.name || "You"}
       />
     );
   }
