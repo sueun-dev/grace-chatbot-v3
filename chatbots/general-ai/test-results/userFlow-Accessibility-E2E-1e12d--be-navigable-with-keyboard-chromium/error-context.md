@@ -40,7 +40,7 @@
                                     - heading "Sky" [level=3] [ref=e59]
                                     - generic [ref=e61]: 07:47 PM
                                 - generic [ref=e62]:
-                                    - paragraph [ref=e63]: Are you between the ages of 18 and 20?
+                                    - paragraph [ref=e63]: Are you between the ages of 21 and 25?
                                     - generic [ref=e64]:
                                         - button "Yes" [ref=e65] [cursor=pointer]:
                                             - text: "Yes"
