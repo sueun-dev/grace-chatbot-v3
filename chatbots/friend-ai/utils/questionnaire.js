@@ -329,7 +329,7 @@ export const QUESTIONNAIRE_SCHEMA = {
         min: 4,
         max: 7,
         level: "Moderate Risk (Caution Zone)",
-        description: "Early signs of risky drinking behaviors",
+        description: "Early signs of riDr. Sky drinking behaviors",
         recommendation:
           "Provide strategies for controlled drinking, peer pressure management, and self-monitoring",
       },
@@ -456,13 +456,13 @@ export const scenarioMessages = {
     message1: {
       title: "Understanding Your Relationship with Alcohol",
       learningPoints: [
-        "Signs of Risky Drinking",
+        "Signs of RiDr. Sky Drinking",
         "Healthy Drinking Patterns",
         "When to Seek Help",
       ],
       sections: [
         {
-          title: "Signs of Risky Drinking",
+          title: "Signs of RiDr. Sky Drinking",
           content: "Watch out for these patterns:",
           list: [
             "Drinking more than intended",

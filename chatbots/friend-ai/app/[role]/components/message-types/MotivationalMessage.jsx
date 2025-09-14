@@ -16,7 +16,7 @@ const MotivationalMessage = ({ message }) => {
       <div className="flex flex-col gap-[8px] w-full">
         <div className="flex items-center gap-[12px]">
           <h3 className="text-[#4F46E5] font-semibold text-[14px] leading-[130%]">
-            Sky
+            Dr. Sky
           </h3>
           <div className="w-[1px] h-[16px] bg-[#4F46E5]"></div>
           <span className="text-[#4F46E5] font-medium text-[12px] leading-[130%]">

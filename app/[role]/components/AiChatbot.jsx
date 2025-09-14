@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 
 const AiChatbot = () => {
   const router = useRouter();
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [showChatList, setShowChatList] = useState(true); // Set to true by default
 
   // Custom hooks
@@ -148,7 +148,7 @@ const AiChatbot = () => {
           showSidebar={showSidebar}
         />
         {/* Chat Container */}
-        <div className="flex-grow p-[40px] flex flex-col justify-center items-center overflow-hidden  bg-[url('/bg-gradient.png')] bg-cover bg-center">
+        <div className="flex-grow p-[20px] flex flex-col justify-center items-center overflow-hidden  bg-[url('/bg-gradient.png')] bg-cover bg-center">
           <ChatList
             messages={messages}
             onSendMessage={(message) =>

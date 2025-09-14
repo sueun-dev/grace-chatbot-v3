@@ -23,7 +23,7 @@ const ChatList = ({
   }, [messages]);
 
   return (
-    <div className="w-full max-w-[80%] mx-auto h-full flex flex-col justify-between overflow-y-auto ">
+    <div className="w-full lg:max-w-[80%] mx-auto h-full flex flex-col justify-between overflow-y-auto ">
       {/* Chat List Container */}
       <div className="flex-grow overflow-y-auto">
         {/* Date */}
