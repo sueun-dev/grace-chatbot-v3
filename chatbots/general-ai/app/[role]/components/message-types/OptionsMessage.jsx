@@ -36,7 +36,7 @@ const OptionsMessage = ({ message, onOptionSelect }) => {
       <div className="flex flex-col gap-[8px] w-full">
         <div className="flex items-center gap-[12px]">
           <h3 className="text-[#19213D] font-medium text-[14px] leading-[130%]">
-            Sky
+            Dr. Sky
           </h3>
           <div className="w-[1px] h-[16px] bg-[#F0F2F5]"></div>
           <span className="text-[#666F8D] font-medium text-[12px] leading-[130%]">
@@ -50,7 +50,9 @@ const OptionsMessage = ({ message, onOptionSelect }) => {
           {/* Display suggestions if present */}
           {message.suggestions && message.suggestions.length > 0 && (
             <div className="bg-blue-50 p-[12px] rounded-[8px] border-l-4 border-blue-500">
-              <p className="text-[12px] font-semibold text-blue-700 mb-[8px]">Suggestions for improvement:</p>
+              <p className="text-[12px] font-semibold text-blue-700 mb-[8px]">
+                Suggestions for improvement:
+              </p>
               <ul className="list-disc list-inside space-y-[4px]">
                 {message.suggestions.map((suggestion, idx) => (
                   <li key={idx} className="text-[12px] text-blue-600">

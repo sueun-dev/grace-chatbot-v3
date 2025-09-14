@@ -6,8 +6,9 @@ const ResultsMessage = ({ message, onContinue }) => {
 
   // Handle both string and object formats for riskLevel
   const getRiskLevelString = () => {
-    if (typeof riskLevel === 'string') return riskLevel;
-    if (riskLevel && typeof riskLevel === 'object' && riskLevel.level) return riskLevel.level;
+    if (typeof riskLevel === "string") return riskLevel;
+    if (riskLevel && typeof riskLevel === "object" && riskLevel.level)
+      return riskLevel.level;
     return "Unknown Risk";
   };
 
@@ -41,7 +42,7 @@ const ResultsMessage = ({ message, onContinue }) => {
       <div className="flex flex-col gap-[16px] w-full">
         <div className="flex items-center gap-[12px]">
           <h3 className="text-[#19213D] font-medium text-[14px] leading-[130%]">
-            Sky
+            Dr. Sky
           </h3>
           <div className="w-[1px] h-[16px] bg-[#F0F2F5]"></div>
           <span className="text-[#666F8D] font-medium text-[12px] leading-[130%]">
@@ -52,9 +53,7 @@ const ResultsMessage = ({ message, onContinue }) => {
         {/* Assessment Results */}
         <div className="border-[2px] border-[#F0F2F5] rounded-[12px] p-[20px] bg-gradient-to-br from-blue-50 to-purple-50">
           <div className="flex items-center gap-[12px] mb-[16px]">
-            <span className="text-[24px]">
-              {getRiskLevelIcon(levelString)}
-            </span>
+            <span className="text-[24px]">{getRiskLevelIcon(levelString)}</span>
             <h2 className="text-[#19213D] font-semibold text-[18px] leading-[130%]">
               Assessment Complete
             </h2>
@@ -73,7 +72,9 @@ const ResultsMessage = ({ message, onContinue }) => {
               <h3 className="font-semibold text-[16px]">{levelString}</h3>
             </div>
             <p className="text-[14px] leading-[150%]">
-              {typeof riskLevel === 'object' && riskLevel.description ? riskLevel.description : `Based on your responses, you fall into the ${levelString} category.`}
+              {typeof riskLevel === "object" && riskLevel.description
+                ? riskLevel.description
+                : `Based on your responses, you fall into the ${levelString} category.`}
             </p>
           </div>
 
@@ -83,7 +84,9 @@ const ResultsMessage = ({ message, onContinue }) => {
               Recommendation:
             </h4>
             <p className="text-[14px] leading-[150%] text-[#666F8D]">
-              {typeof riskLevel === 'object' && riskLevel.recommendation ? riskLevel.recommendation : 'We recommend exploring the training scenarios to better understand substance use risks and develop healthy coping strategies.'}
+              {typeof riskLevel === "object" && riskLevel.recommendation
+                ? riskLevel.recommendation
+                : "We recommend exploring the training scenarios to better understand substance use risks and develop healthy coping strategies."}
             </p>
           </div>
         </div>

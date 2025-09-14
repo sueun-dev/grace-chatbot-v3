@@ -19,7 +19,10 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
     setAttempts(currentAttempt);
 
     // Check if answer is appropriate
-    const isAppropriate = checkIfAppropriate(userAnswer, message.scenario || message.scenarioData);
+    const isAppropriate = checkIfAppropriate(
+      userAnswer,
+      message.scenario || message.scenarioData
+    );
 
     if (isAppropriate) {
       setIsCorrect(true);
@@ -127,10 +130,10 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
         "Remind them of your responsibility and suggest a non-alcoholic option.",
       helping_friend:
         "Be firm but caring. Offer alternatives like calling a ride or staying over.",
-      default:
-        "Think about saying no politely or suggesting alternatives."
+      default: "Think about saying no politely or suggesting alternatives.",
     };
-    const scenarioType = message.scenario?.type || message.scenarioData?.scenarioKey || 'default';
+    const scenarioType =
+      message.scenario?.type || message.scenarioData?.scenarioKey || "default";
     return hints[scenarioType] || hints.default;
   };
 
@@ -142,7 +145,7 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
       <div className="flex flex-col gap-[16px] w-full">
         <div className="flex items-center gap-[12px]">
           <h3 className="text-[#19213D] font-medium text-[14px] leading-[130%]">
-            Sky
+            Dr. Sky
           </h3>
           <div className="w-[1px] h-[16px] bg-[#F0F2F5]"></div>
           <span className="text-[#666F8D] font-medium text-[12px] leading-[130%]">
@@ -153,10 +156,13 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
         {/* Scenario Description */}
         <div className="p-[16px] bg-blue-50 rounded-[8px] border border-blue-200">
           <p className="text-[#19213D] text-[16px] leading-[130%] font-medium mb-[8px]">
-            Scenario {message.scenario?.id || 1}: {message.scenario?.type || 'Practice'}
+            Scenario {message.scenario?.id || 1}:{" "}
+            {message.scenario?.type || "Practice"}
           </p>
           <p className="text-[#666F8D] text-[14px] leading-[130%]">
-            {message.content || message.scenario?.description || message.scenarioData?.description}
+            {message.content ||
+              message.scenario?.description ||
+              message.scenarioData?.description}
           </p>
         </div>
 
@@ -226,7 +232,8 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
             {!isCorrect && attempts >= maxAttempts && (
               <div className="mt-[12px] p-[12px] bg-blue-50 rounded-[8px] border border-blue-200">
                 <p className="text-[#023E6E] text-[14px] leading-[130%] font-medium">
-                  Example: "No thanks, I'm good with my water. I'm the designated driver tonight."
+                  Example: "No thanks, I'm good with my water. I'm the
+                  designated driver tonight."
                 </p>
               </div>
             )}

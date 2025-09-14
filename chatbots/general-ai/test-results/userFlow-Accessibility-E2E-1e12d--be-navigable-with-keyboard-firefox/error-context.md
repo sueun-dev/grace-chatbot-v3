@@ -17,7 +17,7 @@
                             - img "element" [ref=e28]
                             - generic [ref=e29]:
                                 - generic [ref=e30]:
-                                    - heading "Sky" [level=3] [ref=e31]
+                                    - heading "Dr. Sky" [level=3] [ref=e31]
                                     - generic [ref=e33]: 07:48 PM
                                 - generic [ref=e34]:
                                     - paragraph [ref=e35]: Hello! I'm Dr. Sky, here to provide guidance on alcohol awareness and healthier choices. Before we begin, can I ask a couple of quick questions?
@@ -37,7 +37,7 @@
                             - img "element" [ref=e58]
                             - generic [ref=e59]:
                                 - generic [ref=e60]:
-                                    - heading "Sky" [level=3] [ref=e61]
+                                    - heading "Dr. Sky" [level=3] [ref=e61]
                                     - generic [ref=e63]: 07:48 PM
                                 - paragraph [ref=e65]: Thank you for your time. Feel free to reach out if you have any questions about alcohol awareness in the future.
                 - generic [ref=e66]:
