@@ -7,7 +7,9 @@ export const useScenarioLearning = () => {
     isActive: false,
     currentScenario: null,
     completedScenarios: [],
-    currentStep: 0, // 0: welcome, 1: scenario1, 2: question1, 3: scenario2, 4: question2, 5: thank you
+    phase: "content", // 'content' | 'question'
+    contentIndex: 0,
+    questionIndex: 0,
   });
 
   // Helper function to determine which scenario to show based on risk level
@@ -44,15 +46,17 @@ export const useScenarioLearning = () => {
         riskLevel: riskLevel,
       },
       completedScenarios: [],
-      currentStep: 1, // Start directly at step 1 (first scenario content)
+      phase: "content",
+      contentIndex: 0,
+      questionIndex: 0,
     });
 
-    // Directly show the first scenario content instead of welcome message
-    showScenarioContent(scenarioKey, 1, setMessages);
+    // Show the first content page
+    showScenarioContent(scenarioKey, 0, setMessages);
   };
 
-  const showScenarioContent = (scenarioKey, step, setMessages) => {
-    const scenarioData = scenarioMessages[scenarioKey][`message${step}`];
+  const showScenarioContent = (scenarioKey, contentIndex, setMessages) => {
+    const scenarioData = scenarioMessages[scenarioKey]?.[contentIndex];
 
     const scenarioMsg = {
       id: Date.now(),
@@ -66,8 +70,15 @@ export const useScenarioLearning = () => {
     setMessages((prev) => [...prev, scenarioMsg]);
   };
 
-  const showScenarioQuestion = (scenarioKey, setMessages) => {
-    const questionData = scenarioQuestions[scenarioKey];
+  const showScenarioQuestion = (
+    scenarioKey,
+    contentIndex,
+    questionIndex,
+    setMessages
+  ) => {
+    const questionSet = scenarioQuestions[scenarioKey]?.[contentIndex] || [];
+    const questionData = questionSet[questionIndex];
+    if (!questionData) return;
 
     const questionMsg = {
       id: Date.now(),
@@ -90,7 +101,9 @@ export const useScenarioLearning = () => {
       ],
       isActive: false,
       currentScenario: null,
-      currentStep: 0,
+      phase: "content",
+      contentIndex: 0,
+      questionIndex: 0,
     }));
 
     // Show completion message and then start scenario simulation
@@ -120,28 +133,68 @@ export const useScenarioLearning = () => {
   ) => {
     // Handle scenario learning responses
     if (option && typeof option === "object" && option.type) {
-      if (option.type === "continue_scenario") {
-        // Continue to next step in scenario
-        if (scenarioState.currentStep === 1) {
-          setScenarioState((prev) => ({ ...prev, currentStep: 2 }));
-          showScenarioQuestion(scenarioState.currentScenario.key, setMessages);
-        } else if (scenarioState.currentStep === 3) {
-          setScenarioState((prev) => ({ ...prev, currentStep: 4 }));
-          showScenarioQuestion(scenarioState.currentScenario.key, setMessages);
+      const key = scenarioState.currentScenario.key;
+      const contentCount = scenarioMessages[key]?.length || 0;
+      const questionsForContent =
+        scenarioQuestions[key]?.[scenarioState.contentIndex] || [];
+
+      if (
+        option.type === "continue_scenario" &&
+        scenarioState.phase === "content"
+      ) {
+        // If this content has question(s), switch to questions; else advance content
+        if (questionsForContent.length > 0) {
+          setScenarioState((prev) => ({
+            ...prev,
+            phase: "question",
+            questionIndex: 0,
+          }));
+          showScenarioQuestion(key, scenarioState.contentIndex, 0, setMessages);
+        } else {
+          const nextContent = scenarioState.contentIndex + 1;
+          if (nextContent < contentCount) {
+            setScenarioState((prev) => ({
+              ...prev,
+              contentIndex: nextContent,
+              phase: "content",
+            }));
+            showScenarioContent(key, nextContent, setMessages);
+          } else {
+            handleScenarioComplete(setMessages, startScenarioSimulation);
+          }
         }
         return true;
-      } else if (option.type === "continue_question") {
-        // Continue to next step after answering question
-        if (scenarioState.currentStep === 2) {
-          setScenarioState((prev) => ({ ...prev, currentStep: 3 }));
-          showScenarioContent(
-            scenarioState.currentScenario.key,
-            2,
+      }
+
+      if (
+        option.type === "continue_question" &&
+        scenarioState.phase === "question"
+      ) {
+        const nextQuestion = scenarioState.questionIndex + 1;
+        if (nextQuestion < questionsForContent.length) {
+          setScenarioState((prev) => ({
+            ...prev,
+            questionIndex: nextQuestion,
+          }));
+          showScenarioQuestion(
+            key,
+            scenarioState.contentIndex,
+            nextQuestion,
             setMessages
           );
-        } else if (scenarioState.currentStep === 4) {
-          setScenarioState((prev) => ({ ...prev, currentStep: 5 }));
-          handleScenarioComplete(setMessages, startScenarioSimulation);
+        } else {
+          const nextContent = scenarioState.contentIndex + 1;
+          if (nextContent < contentCount) {
+            setScenarioState((prev) => ({
+              ...prev,
+              contentIndex: nextContent,
+              phase: "content",
+              questionIndex: 0,
+            }));
+            showScenarioContent(key, nextContent, setMessages);
+          } else {
+            handleScenarioComplete(setMessages, startScenarioSimulation);
+          }
         }
         return true;
       }
@@ -160,7 +213,9 @@ export const useScenarioLearning = () => {
       isActive: false,
       currentScenario: null,
       completedScenarios: [],
-      currentStep: 0,
+      phase: "content",
+      contentIndex: 0,
+      questionIndex: 0,
     });
   };
 
