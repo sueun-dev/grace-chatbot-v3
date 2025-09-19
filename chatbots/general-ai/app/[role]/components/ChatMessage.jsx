@@ -28,7 +28,7 @@ const ChatMessage = ({
         message={message}
         isUser={isUser}
         icon={currentUser?.avatar || "/user-avatar-blue.png"}
-        userName={currentUser?.name || "You"}
+        userName="User"
       />
     );
   }

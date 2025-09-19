@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useScenarioSimulationEnhanced } from '@/app/[role]/hooks/useScenarioSimulationEnhanced'
 
 // Mock fetch
@@ -170,51 +170,97 @@ describe('useScenarioSimulationEnhanced Hook Tests', () => {
 
     test('should handle max retries reached', async () => {
       const { result } = renderHook(() => useScenarioSimulationEnhanced())
-      
-      // Start simulation with max retries reached
+
+      // Start simulation
       const mockScenarios = [{
         id: 1,
         type: 'test',
         description: 'Test scenario',
         context: 'Test context'
-      }, {
-        id: 2,
-        type: 'test2',
-        description: 'Test scenario 2',
-        context: 'Test context 2'
       }]
-      
+
       act(() => {
         result.current.startScenarioSimulation(mockScenarios, mockSetMessages)
-        // Set retry count to max - 1
-        result.current.simulationState.retryCount = 2
       })
-      
-      // Mock inappropriate evaluation
-      global.fetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          isAppropriate: false,
-          reason: 'Still needs improvement',
-          score: 40
+
+      // Mock inappropriate evaluations for all retries
+      global.fetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            isAppropriate: false,
+            reason: 'Needs improvement',
+            score: 40
+          })
         })
-      })
-      
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            isAppropriate: false,
+            reason: 'Still needs improvement',
+            score: 45
+          })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            isAppropriate: false,
+            reason: 'Not quite there',
+            score: 50
+          })
+        })
+
+      // First attempt (retryCount = 0)
       await act(async () => {
-        await result.current.handleUserInput('Another poor response', mockSetMessages)
+        await result.current.handleUserInput('First attempt', mockSetMessages)
       })
-      
-      // Should move to next scenario after max retries
-      await waitFor(() => {
-        const messageCall = mockSetMessages.mock.calls.find(call => {
-          const fn = call[0]
-          const messages = fn([])
-          return messages.some(msg => 
-            msg.content && msg.content.includes('Maximum attempts')
+
+      // Handle retry option to try again (retryCount = 1)
+      act(() => {
+        result.current.handleSimulationOptionSelect('retry', mockSetMessages)
+      })
+
+      // Second attempt
+      await act(async () => {
+        await result.current.handleUserInput('Second attempt', mockSetMessages)
+      })
+
+      // Handle retry option again (retryCount = 2)
+      act(() => {
+        result.current.handleSimulationOptionSelect('retry', mockSetMessages)
+      })
+
+      // Third attempt - should trigger max retries message
+      await act(async () => {
+        await result.current.handleUserInput('Third attempt', mockSetMessages)
+      })
+
+      // Wait a bit for the setTimeout in the code
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      })
+
+      // Check that retryCount reached max (maxRetries is 3, so retryCount should be 2 when reaching the limit)
+      expect(result.current.simulationState.retryCount).toBe(2)
+
+      // Check that maximum attempts message was shown
+      const hasMaxAttemptsMsg = mockSetMessages.mock.calls.some(call => {
+        if (typeof call[0] === 'function') {
+          const messages = call[0]([])
+          return messages.some(msg =>
+            msg && msg.content && typeof msg.content === 'string' &&
+            msg.content.includes('Maximum attempts')
           )
-        })
-        expect(messageCall).toBeDefined()
+        } else if (Array.isArray(call[0])) {
+          return call[0].some(msg =>
+            msg && msg.content && typeof msg.content === 'string' &&
+            msg.content.includes('Maximum attempts')
+          )
+        }
+        return false
       })
+
+      expect(hasMaxAttemptsMsg).toBe(true)
     })
 
     test('should not handle input when not waiting', async () => {
@@ -244,13 +290,15 @@ describe('useScenarioSimulationEnhanced Hook Tests', () => {
         }], mockSetMessages)
       })
       
-      const handled = act(() => {
-        return result.current.handleSimulationOptionSelect(
+      // handleSimulationOptionSelect is not async, it returns boolean directly
+      let handled;
+      act(() => {
+        handled = result.current.handleSimulationOptionSelect(
           { value: 'retry' },
           mockSetMessages
         )
       })
-      
+
       expect(handled).toBe(true)
       expect(result.current.simulationState.waitingForInput).toBe(true)
     })
@@ -268,13 +316,14 @@ describe('useScenarioSimulationEnhanced Hook Tests', () => {
         result.current.startScenarioSimulation(scenarios, mockSetMessages)
       })
       
-      const handled = act(() => {
-        return result.current.handleSimulationOptionSelect(
+      let handled;
+      act(() => {
+        handled = result.current.handleSimulationOptionSelect(
           { value: 'skip' },
           mockSetMessages
         )
       })
-      
+
       expect(handled).toBe(true)
     })
 
@@ -291,14 +340,15 @@ describe('useScenarioSimulationEnhanced Hook Tests', () => {
       })
       
       // Test with string option
-      let handled = act(() => {
-        return result.current.handleSimulationOptionSelect('retry', mockSetMessages)
+      let handled;
+      act(() => {
+        handled = result.current.handleSimulationOptionSelect('retry', mockSetMessages)
       })
       expect(handled).toBe(true)
       
       // Test with object option
-      handled = act(() => {
-        return result.current.handleSimulationOptionSelect(
+      act(() => {
+        handled = result.current.handleSimulationOptionSelect(
           { value: 'skip', text: 'Skip' },
           mockSetMessages
         )
