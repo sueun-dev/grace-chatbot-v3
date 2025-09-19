@@ -7,6 +7,7 @@ const ScenarioMessage = ({ message, onAnswer }) => {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [countdown, setCountdown] = useState(2);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
 
   useEffect(() => {
     // Countdown timer
@@ -34,8 +35,22 @@ const ScenarioMessage = ({ message, onAnswer }) => {
   };
 
   const handleAnswerSelect = (option) => {
+    // Check if this is the "show answer" option after 3 wrong attempts
+    if (option.id === "show_answer" && wrongAttempts >= 3) {
+      // Find the correct answer
+      const correctOption = message.questionData.options.find(opt => opt.correct);
+      setSelectedAnswer(correctOption);
+      setShowFeedback(true);
+      return;
+    }
+    
     setSelectedAnswer(option);
     setShowFeedback(true);
+    
+    // Increment wrong attempts if answer is incorrect
+    if (!option.correct) {
+      setWrongAttempts(prev => prev + 1);
+    }
   };
 
   const handleFeedbackContinue = () => {
@@ -71,24 +86,44 @@ const ScenarioMessage = ({ message, onAnswer }) => {
 
           {/* Options */}
           <div className="space-y-[12px] mb-[16px]">
-            {message.questionData.options.map((option) => (
+            {message.questionData.options
+              .filter(option => {
+                // Hide "maybe" option until 3 wrong attempts
+                if (option.id === "maybe" || option.value === "maybe") {
+                  return wrongAttempts >= 3;
+                }
+                return true;
+              })
+              .map((option) => {
+                // Transform "maybe" option to "Show Answer" after 3 wrong attempts
+                let displayOption = option;
+                if ((option.id === "maybe" || option.value === "maybe") && wrongAttempts >= 3) {
+                  displayOption = {
+                    ...option,
+                    id: "show_answer",
+                    text: "정답 보기",
+                    value: "show_answer"
+                  };
+                }
+                return (
               <button
-                key={option.id}
-                onClick={() => handleAnswerSelect(option)}
+                key={displayOption.id}
+                onClick={() => handleAnswerSelect(displayOption === option ? option : displayOption)}
                 disabled={selectedAnswer !== null}
                 className={`w-full p-[16px] text-left rounded-[8px] border transition-all duration-200 ${
-                  selectedAnswer?.id === option.id
-                    ? option.correct
+                  selectedAnswer?.id === option.id || (selectedAnswer?.id === displayOption.id && displayOption.id === "show_answer")
+                    ? option.correct || displayOption.id === "show_answer"
                       ? "bg-green-50 border-green-300"
                       : "bg-red-50 border-red-300"
                     : "bg-white border-[#F0F2F5] hover:border-[#023E6E]"
                 }`}
               >
                 <span className="text-[#19213D] font-medium text-[16px] leading-[130%]">
-                  {option.text}
+                  {displayOption.text}
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
 
           {/* Feedback */}

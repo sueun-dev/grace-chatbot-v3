@@ -108,10 +108,9 @@ describe('useQuestionnaire Hook Tests', () => {
       const responses = result.current.questionnaireState.responses
       const responseKeys = Object.keys(responses)
       if (responseKeys.length > 0) {
-        expect(responses[responseKeys[0]]).toMatchObject({
-          value: expect.any(String),
-          score: expect.any(Number)
-        })
+        // Responses are stored as strings (option.value), not objects
+        expect(typeof responses[responseKeys[0]]).toBe('string')
+        expect(responses[responseKeys[0]]).toBe('never')
       }
     })
 

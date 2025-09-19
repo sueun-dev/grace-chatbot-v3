@@ -314,7 +314,6 @@ export const useScenarioSimulationEnhanced = () => {
     // Normalize option value (handle both string and object formats)
     const optionValue = typeof option === 'object' && option.value ? option.value : option;
     
-    console.log('handleSimulationOptionSelect received:', option, 'normalized to:', optionValue);
 
     if (optionValue === "retry") {
       // Show scenario again for retry
