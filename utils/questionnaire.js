@@ -199,14 +199,14 @@ export const QUESTIONNAIRE_SCHEMA = {
       id: "crafft_intro",
       type: "text",
       content:
-        "Now, I'd like to ask a few questions about alcohol and substance use. Just answer honestly. There are no right or wrong answers!",
+        "Now, I'd like to ask a few questions about alcohol use. Just answer honestly. There are no right or wrong answers!",
       nextQuestion: "car_ride",
     },
     {
       id: "car_ride",
       type: "options",
       content:
-        "Have you ever ridden in a car driven by someone (including yourself) who was high or had been using alcohol or drugs?",
+        "Have you ever ridden in a car driven by someone (including yourself) who was high or had been using alcohol?",
       options: [
         { id: "yes", text: "Yes", value: "yes", points: 1 },
         { id: "no", text: "No", value: "no", points: 0 },
@@ -220,7 +220,7 @@ export const QUESTIONNAIRE_SCHEMA = {
       id: "relax_fit_in",
       type: "options",
       content:
-        "Do you ever use alcohol or drugs to relax, feel better about yourself, or fit in?",
+        "Do you ever use alcohol to relax, feel better about yourself, or fit in?",
       options: [
         { id: "yes", text: "Yes", value: "yes", points: 1 },
         { id: "no", text: "No", value: "no", points: 0 },
@@ -233,7 +233,7 @@ export const QUESTIONNAIRE_SCHEMA = {
     {
       id: "alone_use",
       type: "options",
-      content: "Do you ever use alcohol or drugs when you are alone?",
+      content: "Do you ever use alcohol when you are alone?",
       options: [
         { id: "yes", text: "Yes", value: "yes", points: 1 },
         { id: "no", text: "No", value: "no", points: 0 },
@@ -246,8 +246,7 @@ export const QUESTIONNAIRE_SCHEMA = {
     {
       id: "forget_things",
       type: "options",
-      content:
-        "Do you ever forget things you did while using alcohol or drugs?",
+      content: "Do you ever forget things you did while using alcohol?",
       options: [
         { id: "yes", text: "Yes", value: "yes", points: 1 },
         { id: "no", text: "No", value: "no", points: 0 },
@@ -261,7 +260,7 @@ export const QUESTIONNAIRE_SCHEMA = {
       id: "family_friends_concern",
       type: "options",
       content:
-        "Have your family or friends ever told you that you should cut down on your drinking or drug use?",
+        "Have your family or friends ever told you that you should cut down on your drinking?",
       options: [
         { id: "yes", text: "Yes", value: "yes", points: 1 },
         { id: "no", text: "No", value: "no", points: 0 },
@@ -275,7 +274,7 @@ export const QUESTIONNAIRE_SCHEMA = {
       id: "trouble_using",
       type: "options",
       content:
-        "Have you ever gotten into trouble while you were using alcohol or drugs?",
+        "Have you ever gotten into trouble while you were using alcohol?",
       options: [
         { id: "yes", text: "Yes", value: "yes", points: 1 },
         { id: "no", text: "No", value: "no", points: 0 },
@@ -292,11 +291,11 @@ export const QUESTIONNAIRE_SCHEMA = {
         "Based on what you've told me, would you be interested in exploring ways to build healthier habits around alcohol?",
       options: [
         { id: "yes", text: "Yes, that would be helpful", value: "yes" },
-        {
-          id: "maybe",
-          text: "Maybe, I'm open to learning more",
-          value: "maybe",
-        },
+        // {
+        //   id: "maybe",
+        //   text: "Maybe, I'm open to learning more",
+        //   value: "maybe",
+        // },
         // {
         //   id: "no",
         //   text: "No, I just want general information for now",
@@ -329,7 +328,7 @@ export const QUESTIONNAIRE_SCHEMA = {
         min: 4,
         max: 7,
         level: "Moderate Risk (Caution Zone)",
-        description: "Early signs of riDr. Sky drinking behaviors",
+        description: "Early Signs of Risky Drinking behaviors",
         recommendation:
           "Provide strategies for controlled drinking, peer pressure management, and self-monitoring",
       },
@@ -456,13 +455,13 @@ export const scenarioMessages = {
     message1: {
       title: "Understanding Your Relationship with Alcohol",
       learningPoints: [
-        "Signs of RiDr. Sky Drinking",
+        "Signs of Risky Drinking",
         "Healthy Drinking Patterns",
         "When to Seek Help",
       ],
       sections: [
         {
-          title: "Signs of RiDr. Sky Drinking",
+          title: "Signs of Risky Drinking",
           content: "Watch out for these patterns:",
           list: [
             "Drinking more than intended",

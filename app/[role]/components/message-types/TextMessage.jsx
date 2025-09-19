@@ -5,7 +5,7 @@ const TextMessage = ({
   message,
   isUser = false,
   icon = "/element.png",
-  userName = "Dr. Sky",
+  userName = "Sky",
 }) => {
   return (
     <div

@@ -11,7 +11,7 @@ const ThankYouMessage = ({ message, onGoHome }) => {
       <div className="flex flex-col gap-[16px] w-full">
         <div className="flex items-center gap-[12px]">
           <h3 className="text-[#19213D] font-medium text-[14px] leading-[130%]">
-            Dr. Sky
+            Sky
           </h3>
           <div className="w-[1px] h-[16px] bg-[#F0F2F5]"></div>
           <span className="text-[#666F8D] font-medium text-[12px] leading-[130%]">
