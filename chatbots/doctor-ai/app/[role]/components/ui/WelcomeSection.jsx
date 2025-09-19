@@ -9,7 +9,7 @@ const WelcomeSection = ({ startQuestionnaire }) => {
         <Image src={"/element.png"} width={100} height={100} alt="element" />
       </div>
       <h1 className="text-[#0E121B] font-medium text-[40px] leading-[48px] tracking-[-1%] text-center">
-        Welcome Dr. Sky AI
+        Welcome Sky AI
       </h1>
       <p className="text-[#666F8D] font-normal text-[18px] leading-[26px] text-center max-w-[90%]">
         👋 Hi there! I'm here to help you make smarter choices when it comes to
