@@ -44,53 +44,50 @@ export async function GET(request) {
       { name: 'doctor-ai', label: 'Doctor_AI' },
       { name: 'friend-ai', label: 'Friend_AI' }
     ];
-    
+
     for (const chatbot of chatbots) {
-      // Path to each chatbot's CSV file
-      const csvPath = path.join(
-        process.cwd(), 
-        '..', 
-        chatbot.name, 
-        'user_logs', 
-        'user_interactions.csv'
+      // Path to each chatbot's user logs directory
+      const userLogsPath = path.join(
+        process.cwd(),
+        '..',
+        chatbot.name,
+        'user_logs'
       );
-      
-      if (fs.existsSync(csvPath)) {
-        // Add file to archive with descriptive name
-        archive.file(csvPath, { 
-          name: `${chatbot.label}_interactions.csv` 
-        });
-      } else {
-        // Create empty CSV with headers if doesn't exist
-        const headers = [
-          'timestamp',
-          'user_identifier',
-          'session_id',
-          'action_type',
-          'action_details',
-          'question_id',
-          'response',
-          'score',
-          'scenario_type',
-          'message_content',
-          'option_selected',
-          'page_visited',
-          'chatbot_type'
-        ].join(',');
-        
-        // Add empty CSV to archive
-        archive.append(headers + '\n', { 
-          name: `${chatbot.label}_interactions_empty.csv` 
-        });
+
+      if (fs.existsSync(userLogsPath)) {
+        // Get all user CSV files in this chatbot's directory
+        const userFiles = fs.readdirSync(userLogsPath).filter(file =>
+          file.startsWith('user_') && file.endsWith('.csv')
+        );
+
+        // Create a folder in the archive for this chatbot
+        if (userFiles.length > 0) {
+          userFiles.forEach(file => {
+            const csvPath = path.join(userLogsPath, file);
+            // Add file to archive with chatbot folder structure
+            archive.file(csvPath, {
+              name: `${chatbot.label}/${file}`
+            });
+          });
+        }
       }
     }
-    
-    // Add current chatbot's CSV as well
-    const currentCsvPath = path.join(process.cwd(), 'user_logs', 'user_interactions.csv');
-    if (fs.existsSync(currentCsvPath)) {
-      archive.file(currentCsvPath, { 
-        name: 'Current_Session_interactions.csv' 
-      });
+
+    // Add current chatbot's user CSV files as well
+    const currentUserLogsPath = path.join(process.cwd(), 'user_logs');
+    if (fs.existsSync(currentUserLogsPath)) {
+      const currentUserFiles = fs.readdirSync(currentUserLogsPath).filter(file =>
+        file.startsWith('user_') && file.endsWith('.csv')
+      );
+
+      if (currentUserFiles.length > 0) {
+        currentUserFiles.forEach(file => {
+          const csvPath = path.join(currentUserLogsPath, file);
+          archive.file(csvPath, {
+            name: `Current_General_AI/${file}`
+          });
+        });
+      }
     }
     
     // Finalize the archive
