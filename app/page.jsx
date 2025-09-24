@@ -3,43 +3,91 @@ import CodeVerification from "@/app/[role]/components/ui/CodeVerification";
 import WelcomeToTraining from "@/app/[role]/components/ui/WelcomeToTraining";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Button from "./[role]/components/Button";
+import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export default function Home() {
   const router = useRouter();
   const routes = ["/medical-professional", "/ai-chatbot", "/student"];
   const [showCodeVerification, setShowCodeVerification] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  
+  useEffect(() => {
+    // Log page visit
+    logAction({
+      actionType: ACTION_TYPES.PAGE_VISITED,
+      actionDetails: 'User visited home page',
+      pageVisited: 'home'
+    });
+  }, []);
 
-  const handleCodeVerification = () => {
+  const handleCodeVerification = async () => {
     setShowCodeVerification(true);
     setShowWelcome(false);
+    
+    // Log button click
+    await logAction({
+      actionType: ACTION_TYPES.BUTTON_CLICKED,
+      actionDetails: 'Get Started button clicked',
+      pageVisited: 'home'
+    });
   };
 
-  const handleWelcome = () => {
+  const handleWelcome = async () => {
     setShowWelcome(true);
     setShowCodeVerification(false);
+    
+    // Log welcome screen visit
+    await logAction({
+      actionType: ACTION_TYPES.PAGE_VISITED,
+      actionDetails: 'User reached welcome screen',
+      pageVisited: 'welcome'
+    });
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const code = formData.get("codeVerification");
-    if (code !== "123456") {
-      toast.error("Invalid verification code");
-      return;
-    }
+    
+    // Store user identifier (the code they entered)
+    sessionStorage.setItem('userIdentifier', code);
+    
+    // Log code entry
+    await logAction({
+      actionType: ACTION_TYPES.CODE_ENTERED,
+      actionDetails: 'User entered verification code',
+      pageVisited: 'home'
+    });
+    
+    // No validation - any code is accepted
     toast.success("Verification successful");
+    
+    // Log successful verification
+    await logAction({
+      actionType: ACTION_TYPES.CODE_VERIFIED,
+      actionDetails: 'Code verification successful',
+      pageVisited: 'home'
+    });
+    
     handleWelcome();
   };
 
-  const handleChatBotRedirect = () => {
+  const handleChatBotRedirect = async () => {
     setShowWelcome(false);
     setShowCodeVerification(false);
-    const randomRoute = routes[Math.floor(Math.random() * routes.length)];
-    router.push(randomRoute);
+    
+    // Log chat start
+    await logAction({
+      actionType: ACTION_TYPES.CHAT_STARTED,
+      actionDetails: 'User started chat with general AI',
+      pageVisited: 'welcome'
+    });
+    
+    // Redirect to general AI chatbot
+    router.push("/ai-chatbot");
   };
 
   return (

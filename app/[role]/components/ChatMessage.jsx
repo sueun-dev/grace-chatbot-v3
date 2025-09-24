@@ -9,6 +9,7 @@ import ScenarioMessage from "./message-types/ScenarioMessage";
 import ScenarioSimulationMessage from "./message-types/ScenarioSimulationMessage";
 import MotivationalMessage from "./message-types/MotivationalMessage";
 import ThankYouMessage from "./message-types/ThankYouMessage";
+import CompletionMessage from "./message-types/CompletionMessage";
 
 const ChatMessage = ({
   message,
@@ -27,8 +28,8 @@ const ChatMessage = ({
       <TextMessage
         message={message}
         isUser={isUser}
-        // icon={currentUser?.avatar || "/user-avatar-blue.png"}
-        // userName={currentUser?.name || "You"}
+        icon={currentUser?.avatar || "/user-avatar-blue.png"}
+        userName="User"
       />
     );
   }
@@ -58,6 +59,10 @@ const ChatMessage = ({
       return <MotivationalMessage message={message} />;
     case "thank-you":
       return <ThankYouMessage message={message} onGoHome={onOptionSelect} />;
+    case "completion-code":
+      return <CompletionMessage message={message} />;
+    case "completion-message":
+      return <CompletionMessage message={message} />;
     case "text":
     default:
       return <TextMessage message={message} />;

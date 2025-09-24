@@ -19,7 +19,10 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
     setAttempts(currentAttempt);
 
     // Check if answer is appropriate
-    const isAppropriate = checkIfAppropriate(userAnswer, message.scenarioData);
+    const isAppropriate = checkIfAppropriate(
+      userAnswer,
+      message.scenario || message.scenarioData
+    );
 
     if (isAppropriate) {
       setIsCorrect(true);
@@ -121,19 +124,17 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
 
   const getHint = () => {
     const hints = {
-      peer_pressure_party:
+      peer_pressure:
         "Try saying no politely or suggesting an alternative activity.",
-      pre_game_event:
-        "Consider suggesting food instead or explaining why you don't want to drink.",
-      romantic_interest:
-        "Be honest about your drinking preferences while being respectful.",
-      stressful_week:
-        "Suggest alternative ways to relax or spend time together.",
+      designated_driver:
+        "Remind them of your responsibility and suggest a non-alcoholic option.",
+      helping_friend:
+        "Be firm but caring. Offer alternatives like calling a ride or staying over.",
+      default: "Think about saying no politely or suggesting alternatives.",
     };
-    return (
-      hints[message.scenarioData.scenarioKey] ||
-      "Think about saying no politely or suggesting alternatives."
-    );
+    const scenarioType =
+      message.scenario?.type || message.scenarioData?.scenarioKey || "default";
+    return hints[scenarioType] || hints.default;
   };
 
   return (
@@ -152,18 +153,16 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
           </span>
         </div>
 
-        {/* Scenario Title */}
-        {/* <h1 className="text-[#19213D] font-semibold text-[24px] leading-[130%] mb-[16px]">
-          {message.scenarioData.title}
-        </h1> */}
-
         {/* Scenario Description */}
         <div className="p-[16px] bg-blue-50 rounded-[8px] border border-blue-200">
           <p className="text-[#19213D] text-[16px] leading-[130%] font-medium mb-[8px]">
-            {message.scenarioData.description}
+            Scenario {message.scenario?.id || 1}:{" "}
+            {message.scenario?.type || "Practice"}
           </p>
           <p className="text-[#666F8D] text-[14px] leading-[130%]">
-            {message.scenarioData.prompt}
+            {message.content ||
+              message.scenario?.description ||
+              message.scenarioData?.description}
           </p>
         </div>
 
@@ -233,7 +232,8 @@ const ScenarioSimulationMessage = ({ message, onAnswer }) => {
             {!isCorrect && attempts >= maxAttempts && (
               <div className="mt-[12px] p-[12px] bg-blue-50 rounded-[8px] border border-blue-200">
                 <p className="text-[#023E6E] text-[14px] leading-[130%] font-medium">
-                  "{message.scenarioData.appropriateExample}"
+                  Example: "No thanks, I'm good with my water. I'm the
+                  designated driver tonight."
                 </p>
               </div>
             )}

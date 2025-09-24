@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { QUESTIONNAIRE_SCHEMA } from "@/utils/questionnaire";
 import { generateTimestamp } from "../components/chatService";
+import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useQuestionnaire = () => {
   const [questionnaireState, setQuestionnaireState] = useState({
@@ -82,13 +83,24 @@ export const useQuestionnaire = () => {
     }
   };
 
-  const addResultsMessage = (
+  const addResultsMessage = async (
     totalScore,
     setMessages,
     startScenarioLearning
   ) => {
     const riskLevel = calculateRiskLevel(totalScore);
 
+    // Log assessment results to CSV (but don't show on screen)
+    await logAction({
+      actionType: ACTION_TYPES.ASSESSMENT_COMPLETED,
+      actionDetails: "Assessment completed",
+      assessmentScore: totalScore,
+      riskLevel: riskLevel.level,
+      riskDescription: riskLevel.description,
+      riskRecommendation: riskLevel.recommendation,
+    });
+
+    // Show results message
     const resultsMsg = {
       id: Date.now(),
       type: "results",
@@ -101,10 +113,10 @@ export const useQuestionnaire = () => {
 
     setMessages((prev) => [...prev, resultsMsg]);
 
-    // Automatically start scenario learning after a short delay
+    // Start scenario learning after a delay
     setTimeout(() => {
       startScenarioLearning(riskLevel, setMessages);
-    }, 2000);
+    }, 1500);
   };
 
   const handleQuestionnaireOptionSelect = async (
@@ -117,6 +129,16 @@ export const useQuestionnaire = () => {
     const currentQuestion = getQuestionById(
       questionnaireState.currentQuestionId
     );
+
+    // Log questionnaire option selection
+    await logAction({
+      actionType: ACTION_TYPES.QUESTIONNAIRE_OPTION_SELECTED,
+      actionDetails: `Question: ${questionnaireState.currentQuestionId}`,
+      questionId: questionnaireState.currentQuestionId,
+      response: option.text,
+      optionSelected: option.value,
+      score: option.score || 0,
+    });
 
     // Add user's selection as a message
     const userMsg = {

@@ -14,9 +14,8 @@ export const useScenarioSimulation = () => {
 
   const scenarioKeys = [
     "peer_pressure_party",
-    "pre_game_event",
-    "romantic_interest",
-    "stressful_week",
+    "designated_driver",
+    "helping_friend",
   ];
 
   const startScenarioSimulation = (setMessages) => {
@@ -102,67 +101,89 @@ export const useScenarioSimulation = () => {
 
     // Check if all scenarios are completed
     if (nextIndex >= scenarioKeys.length) {
-      // Show completion message
+      console.log("All scenarios completed, showing final messages...");
+      // Show final completion messages
       setTimeout(() => {
-        const completionMsg = {
+        console.log("Showing completion message 1");
+        const finalAssessmentMsg = {
           id: Date.now(),
-          type: "text",
-          content:
-            "Excellent work! You've practiced responding to different peer pressure situations. Remember, it's okay to say no, and you can always suggest alternatives or simply decline politely. These skills will help you stay true to your choices in real situations.",
+          type: "completion-message",
+          content: "Great job practicing these scenarios! Your answers show self-awareness and healthy decision-making.",
           timestamp: generateTimestamp(),
           isUser: false,
         };
 
-        setMessages((prevMessages) => [...prevMessages, completionMsg]);
+        setMessages((prevMessages) => [...prevMessages, finalAssessmentMsg]);
 
-        // Show motivation and positive reinforcement message
+        // Show "You're not alone" message
         setTimeout(() => {
-          const motivationMsg = {
+          console.log("Showing 'You're not alone' message");
+          const supportMsg = {
             id: Date.now() + 1,
-            type: "motivational",
-            content:
-              'Great job practicing these scenarios. Choosing how to respond helps you build confidence and stay in control.\n\n"Your answers show self-awareness and healthy decision-making."',
+            type: "completion-message",
+            content: "You're not alone in making healthy choices. It's okay to take small steps, ask for help, and keep practicing.",
             timestamp: generateTimestamp(),
             isUser: false,
           };
 
-          setMessages((prevMessages) => [...prevMessages, motivationMsg]);
+          setMessages((prevMessages) => [...prevMessages, supportMsg]);
 
-          // Show ongoing support message
+          // Show training complete message
           setTimeout(() => {
-            const supportMsg = {
+            console.log("Showing training complete message");
+            const trainingCompleteMsg = {
               id: Date.now() + 2,
-              type: "motivational",
-              content:
-                "You're not alone in making healthy choices. It's okay to take small steps, ask for help, and keep practicing.",
+              type: "completion-message",
+              content: `🎉 You've completed the training!
+
+Thank you for your time and thoughtful participation.
+To wrap things up:
+
+1. Please close this browser tab to exit the training.
+
+2. Return to the original survey browser where you started.
+
+3. Please enter the following completion code:`,
               timestamp: generateTimestamp(),
               isUser: false,
             };
 
-            setMessages((prevMessages) => [...prevMessages, supportMsg]);
+            setMessages((prevMessages) => [...prevMessages, trainingCompleteMsg]);
 
-            // Show final options
+            // Generate and show random 6-character alphanumeric code
             setTimeout(() => {
-              const optionsMsg = {
+              console.log("Showing completion code");
+              // Generate random 6-character alphanumeric code
+              const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+              let completionCode = '';
+              for (let i = 0; i < 6; i++) {
+                completionCode += characters.charAt(Math.floor(Math.random() * characters.length));
+              }
+              console.log("Generated code:", completionCode);
+
+              const codeMsg = {
                 id: Date.now() + 3,
-                type: "options",
-                content: "What would you like to do next?",
-                options: [{ id: "go_home", text: "Go Home", value: "go_home" }],
+                type: "completion-code",
+                content: completionCode,
                 timestamp: generateTimestamp(),
                 isUser: false,
               };
 
-              setMessages((prevMessages) => [...prevMessages, optionsMsg]);
-            }, 2000);
-          }, 2000);
-        }, 2000);
-      }, 2000);
+              setMessages((prevMessages) => {
+                console.log("Adding completion code to messages");
+                return [...prevMessages, codeMsg];
+              });
 
-      // Mark simulation as inactive
-      setSimulationState((prev) => ({
-        ...prev,
-        isActive: false,
-      }));
+              // Mark simulation as inactive AFTER all messages are shown
+              console.log("Marking simulation as inactive");
+              setSimulationState((prev) => ({
+                ...prev,
+                isActive: false,
+              }));
+            }, 1000);
+          }, 2000);
+        }, 1500);
+      }, 2000);
     } else {
       // Show next scenario after a delay
       setTimeout(() => {

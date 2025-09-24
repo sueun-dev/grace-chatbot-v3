@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { scenarioMessages, scenarioQuestions } from "@/utils/questionnaire";
+import { scenarioMessages, scenarioQuestions } from "@/utils/scenarioContent";
 import { generateTimestamp } from "../components/chatService";
 
 export const useScenarioLearning = () => {
@@ -7,9 +7,8 @@ export const useScenarioLearning = () => {
     isActive: false,
     currentScenario: null,
     completedScenarios: [],
-    phase: "content", // 'content' | 'question'
-    contentIndex: 0,
-    questionIndex: 0,
+    currentStep: 0, // 0: welcome, 1: msg1, 2: q1, 3: msg2, 4: q2, 5: msg3, 6: q3, 7: complete
+    currentMessageIndex: 1, // Track which message/question we're on
   });
 
   // Helper function to determine which scenario to show based on risk level
@@ -46,23 +45,24 @@ export const useScenarioLearning = () => {
         riskLevel: riskLevel,
       },
       completedScenarios: [],
-      phase: "content",
-      contentIndex: 0,
-      questionIndex: 0,
+      currentStep: 1, // Start directly at step 1 (first scenario content)
     });
 
-    // Show the first content page
-    showScenarioContent(scenarioKey, 0, setMessages);
+    // Directly show the first scenario content instead of welcome message
+    showScenarioContent(scenarioKey, 1, setMessages);
   };
 
-  const showScenarioContent = (scenarioKey, contentIndex, setMessages) => {
-    const scenarioData = scenarioMessages[scenarioKey]?.[contentIndex];
+  const showScenarioContent = (scenarioKey, messageNumber, setMessages) => {
+    const scenarioData = scenarioMessages[scenarioKey]?.[`message${messageNumber}`];
+
+    if (!scenarioData) return; // Skip if no message exists
 
     const scenarioMsg = {
       id: Date.now(),
       type: "scenario",
       scenarioData: scenarioData,
       scenarioKey: scenarioKey,
+      messageNumber: messageNumber,
       timestamp: generateTimestamp(),
       isUser: false,
     };
@@ -70,21 +70,17 @@ export const useScenarioLearning = () => {
     setMessages((prev) => [...prev, scenarioMsg]);
   };
 
-  const showScenarioQuestion = (
-    scenarioKey,
-    contentIndex,
-    questionIndex,
-    setMessages
-  ) => {
-    const questionSet = scenarioQuestions[scenarioKey]?.[contentIndex] || [];
-    const questionData = questionSet[questionIndex];
-    if (!questionData) return;
+  const showScenarioQuestion = (scenarioKey, questionNumber, setMessages) => {
+    const questionData = scenarioQuestions[scenarioKey][`question${questionNumber}`];
+
+    if (!questionData) return; // Skip if no question exists
 
     const questionMsg = {
       id: Date.now(),
       type: "scenario",
       questionData: questionData,
       scenarioKey: scenarioKey,
+      questionNumber: questionNumber,
       timestamp: generateTimestamp(),
       isUser: false,
     };
@@ -101,9 +97,7 @@ export const useScenarioLearning = () => {
       ],
       isActive: false,
       currentScenario: null,
-      phase: "content",
-      contentIndex: 0,
-      questionIndex: 0,
+      currentStep: 0,
     }));
 
     // Show completion message and then start scenario simulation
@@ -118,10 +112,30 @@ export const useScenarioLearning = () => {
 
     setMessages((prev) => [...prev, completionMsg]);
 
-    // Start scenario simulation after a delay
+    // Start scenario simulation after a delay with sample scenarios
     setTimeout(() => {
       if (startScenarioSimulation) {
-        startScenarioSimulation(setMessages);
+        const scenarios = [
+          {
+            id: 1,
+            type: "peer_pressure",
+            description: "You're at a party and your friends are pressuring you to drink more than you're comfortable with. How would you handle this situation?",
+            context: "Social situation with peer pressure"
+          },
+          {
+            id: 2,
+            type: "designated_driver",
+            description: "You agreed to be the designated driver, but someone offers you 'just one drink'. What do you say?",
+            context: "Responsibility and commitment scenario"
+          },
+          {
+            id: 3,
+            type: "helping_friend",
+            description: "Your friend has had too much to drink and wants to drive home. How do you intervene?",
+            context: "Friend safety and intervention"
+          }
+        ];
+        startScenarioSimulation(scenarios, setMessages);
       }
     }, 3000);
   };
@@ -133,68 +147,39 @@ export const useScenarioLearning = () => {
   ) => {
     // Handle scenario learning responses
     if (option && typeof option === "object" && option.type) {
-      const key = scenarioState.currentScenario.key;
-      const contentCount = scenarioMessages[key]?.length || 0;
-      const questionsForContent =
-        scenarioQuestions[key]?.[scenarioState.contentIndex] || [];
+      if (option.type === "continue_scenario") {
+        // After message, show question
+        const nextStep = scenarioState.currentStep + 1;
+        const questionNumber = Math.floor(nextStep / 2);
 
-      if (
-        option.type === "continue_scenario" &&
-        scenarioState.phase === "content"
-      ) {
-        // If this content has question(s), switch to questions; else advance content
-        if (questionsForContent.length > 0) {
-          setScenarioState((prev) => ({
-            ...prev,
-            phase: "question",
-            questionIndex: 0,
-          }));
-          showScenarioQuestion(key, scenarioState.contentIndex, 0, setMessages);
-        } else {
-          const nextContent = scenarioState.contentIndex + 1;
-          if (nextContent < contentCount) {
-            setScenarioState((prev) => ({
-              ...prev,
-              contentIndex: nextContent,
-              phase: "content",
-            }));
-            showScenarioContent(key, nextContent, setMessages);
-          } else {
-            handleScenarioComplete(setMessages, startScenarioSimulation);
-          }
-        }
+        setScenarioState((prev) => ({
+          ...prev,
+          currentStep: nextStep
+        }));
+
+        showScenarioQuestion(scenarioState.currentScenario.key, questionNumber, setMessages);
         return true;
-      }
+      } else if (option.type === "continue_question") {
+        // After question, show next message or complete
+        const nextStep = scenarioState.currentStep + 1;
+        const messageNumber = Math.floor(nextStep / 2) + 1;
 
-      if (
-        option.type === "continue_question" &&
-        scenarioState.phase === "question"
-      ) {
-        const nextQuestion = scenarioState.questionIndex + 1;
-        if (nextQuestion < questionsForContent.length) {
+        // Check if we've completed all content (3 messages and 3 questions)
+        if (nextStep >= 6) {
+          // All content complete, start simulation
+          handleScenarioComplete(setMessages, startScenarioSimulation);
+        } else {
+          // Show next message
           setScenarioState((prev) => ({
             ...prev,
-            questionIndex: nextQuestion,
+            currentStep: nextStep
           }));
-          showScenarioQuestion(
-            key,
-            scenarioState.contentIndex,
-            nextQuestion,
+
+          showScenarioContent(
+            scenarioState.currentScenario.key,
+            messageNumber,
             setMessages
           );
-        } else {
-          const nextContent = scenarioState.contentIndex + 1;
-          if (nextContent < contentCount) {
-            setScenarioState((prev) => ({
-              ...prev,
-              contentIndex: nextContent,
-              phase: "content",
-              questionIndex: 0,
-            }));
-            showScenarioContent(key, nextContent, setMessages);
-          } else {
-            handleScenarioComplete(setMessages, startScenarioSimulation);
-          }
         }
         return true;
       }
@@ -213,9 +198,7 @@ export const useScenarioLearning = () => {
       isActive: false,
       currentScenario: null,
       completedScenarios: [],
-      phase: "content",
-      contentIndex: 0,
-      questionIndex: 0,
+      currentStep: 0,
     });
   };
 
