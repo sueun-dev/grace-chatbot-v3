@@ -195,7 +195,7 @@ const AiChatbot = () => {
             isLoading={isLoading}
             currentUser={currentUser}
             pendingInteractiveMessage={pendingInteractiveMessage}
-            scenarioMode={simulationState.waitingForInput || isFreeChatActive}
+            scenarioMode={simulationState.waitingForInput || isFreeChatActive || simulationState.isCompletelyDone}
           />
         </div>
       </div>

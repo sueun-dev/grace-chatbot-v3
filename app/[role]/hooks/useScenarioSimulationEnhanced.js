@@ -108,8 +108,25 @@ export const useScenarioSimulationEnhanced = () => {
 
   // Handle user input for scenario
   const handleUserInput = async (userInput, setMessages) => {
-    // If completely done, ignore all user input
+    // If completely done, allow user to send messages but don't respond
     if (simulationState.isCompletelyDone) {
+      // Add user message to show it was sent
+      const userMsg = {
+        id: Date.now(),
+        type: "text",
+        content: userInput,
+        timestamp: generateTimestamp(),
+        isUser: true,
+      };
+      setMessages((prev) => [...prev, userMsg]);
+
+      // Log to CSV but don't respond
+      await logAction({
+        actionType: ACTION_TYPES.MESSAGE_SENT,
+        actionDetails: "User sent message after completion",
+        message: userInput,
+      });
+
       return true; // Return true to prevent any other handler from processing
     }
 
