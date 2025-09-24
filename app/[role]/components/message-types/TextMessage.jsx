@@ -13,22 +13,24 @@ const TextMessage = ({
         isUser ? "bg-white/70" : "bg-white"
       }`}
     >
-      {/* <div className="min-w-[24px] min-h-[24px] rounded-full self-start">
-        <Image
-          src={icon}
-          alt="element"
-          width={24}
-          height={24}
-          className="rounded-full"
-        />
-      </div> */}
+      {!isUser && (
+        <div className="min-w-[24px] min-h-[24px] rounded-full self-start">
+          <Image
+            src={icon}
+            alt="element"
+            width={24}
+            height={24}
+            className="rounded-full"
+          />
+        </div>
+      )}
       <div className="flex flex-col gap-[8px]">
         <div className="flex items-center gap-[12px]">
-          {/* <h3
+          <h3
             className={`text-[#19213D] font-medium text-[14px] leading-[130%]`}
           >
             {userName}
-          </h3> */}
+          </h3>
           <div className="w-[1px] h-[16px] bg-[#F0F2F5]"></div>
           <span className="text-[#666F8D] font-medium text-[12px] leading-[130%]">
             {message.timestamp}

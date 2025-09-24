@@ -3,6 +3,7 @@ import {
   simulateAIResponse,
   generateTimestamp,
 } from "../components/chatService";
+import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useChat = () => {
   const [messages, setMessages] = useState([]);
@@ -19,6 +20,13 @@ export const useChat = () => {
   };
 
   const handleSendMessage = async (userMessage, handleUserInput = null) => {
+    // Log message sent
+    await logAction({
+      actionType: ACTION_TYPES.MESSAGE_SENT,
+      actionDetails: 'User sent message',
+      messageContent: userMessage
+    });
+    
     // Check if scenario simulation is waiting for input
     if (handleUserInput) {
       const simulationHandled = handleUserInput(userMessage, setMessages);

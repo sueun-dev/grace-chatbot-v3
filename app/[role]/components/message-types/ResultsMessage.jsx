@@ -2,7 +2,17 @@ import Image from "next/image";
 import React from "react";
 
 const ResultsMessage = ({ message, onContinue }) => {
-  const { riskLevel, totalScore } = message;
+  const { riskLevel, totalScore, summary, showFreeChatOption } = message;
+
+  // Handle both string and object formats for riskLevel
+  const getRiskLevelString = () => {
+    if (typeof riskLevel === "string") return riskLevel;
+    if (riskLevel && typeof riskLevel === "object" && riskLevel.level)
+      return riskLevel.level;
+    return "Unknown Risk";
+  };
+
+  const levelString = getRiskLevelString();
 
   const getRiskLevelColor = (level) => {
     if (level.includes("Low Risk"))
@@ -24,8 +34,6 @@ const ResultsMessage = ({ message, onContinue }) => {
     return "🔵";
   };
 
-  return null;
-
   return (
     <div className="flex items-start gap-[12px] border-[2px] border-[#F0F2F5] box-shadow rounded-[16px] p-[24px] bg-white">
       <div className="min-w-[24px] min-h-[24px] rounded-full self-start">
@@ -45,38 +53,16 @@ const ResultsMessage = ({ message, onContinue }) => {
         {/* Assessment Results */}
         <div className="border-[2px] border-[#F0F2F5] rounded-[12px] p-[20px] bg-gradient-to-br from-blue-50 to-purple-50">
           <div className="flex items-center gap-[12px] mb-[16px]">
-            <span className="text-[24px]">
-              {getRiskLevelIcon(riskLevel.level)}
-            </span>
+            <span className="text-[24px]">✨</span>
             <h2 className="text-[#19213D] font-semibold text-[18px] leading-[130%]">
               Assessment Complete
             </h2>
           </div>
 
-          {/* Risk Level */}
-          <div
-            className={`mb-[16px] p-[16px] rounded-[8px] border-2 ${getRiskLevelColor(
-              riskLevel.level
-            )}`}
-          >
-            <div className="flex items-center gap-[8px] mb-[8px]">
-              <span className="text-[16px]">
-                {getRiskLevelIcon(riskLevel.level)}
-              </span>
-              <h3 className="font-semibold text-[16px]">{riskLevel.level}</h3>
-            </div>
-            <p className="text-[14px] leading-[150%]">
-              {riskLevel.description}
-            </p>
-          </div>
-
-          {/* Recommendation */}
+          {/* Generic Message */}
           <div className="p-[16px] bg-white rounded-[8px] border border-[#F0F2F5]">
-            <h4 className="font-semibold text-[14px] text-[#19213D] mb-[8px]">
-              Recommendation:
-            </h4>
             <p className="text-[14px] leading-[150%] text-[#666F8D]">
-              {riskLevel.recommendation}
+              Thank you for completing the assessment! Let's explore some training scenarios to better understand various situations and develop healthy strategies.
             </p>
           </div>
         </div>

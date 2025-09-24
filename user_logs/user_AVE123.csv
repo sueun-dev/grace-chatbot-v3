@@ -1,0 +1,69 @@
+timestamp,user_identifier,session_id,action_type,action_details,question_id,response,score,scenario_type,message_content,option_selected,page_visited,chatbot_type
+2025-09-24T00:53:37.156Z,AVE123,session_1758675212645_awm3bgpgz,code_entered,User entered verification code,,,,,,,home,general-ai
+2025-09-24T00:53:37.212Z,AVE123,session_1758675212645_awm3bgpgz,code_verified,Code verification successful,,,,,,,home,general-ai
+2025-09-24T00:53:37.266Z,AVE123,session_1758675212645_awm3bgpgz,page_visited,User reached welcome screen,,,,,,,welcome,general-ai
+2025-09-24T00:53:37.861Z,AVE123,session_1758675212645_awm3bgpgz,chat_started,User started chat with general AI,,,,,,,welcome,general-ai
+2025-09-24T00:53:39.528Z,AVE123,session_1758675212645_awm3bgpgz,page_visited,User entered AI chatbot page,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:53:40.759Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_started,Questionnaire started,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:53:40.774Z,AVE123,session_1758675212645_awm3bgpgz,page_visited,User entered AI chatbot page,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:53:40.843Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_started,Questionnaire started,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:53:40.913Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes, let's start"",""value"":""yes""}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:53:40.958Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: intro_question,intro_question,"Yes, let's start",,,,yes,,general-ai
+2025-09-24T00:54:12.484Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes""}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:12.520Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: age_check,age_check,Yes,,,,yes,,general-ai
+2025-09-24T00:54:14.403Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes""}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:14.440Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: alcohol_experience,alcohol_experience,Yes,,,,yes,,general-ai
+2025-09-24T00:54:16.355Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes, let's do it!"",""value"":""yes""}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:16.395Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: continue_assessment,continue_assessment,"Yes, let's do it!",,,,yes,,general-ai
+2025-09-24T00:54:18.605Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""never"",""text"":""Never"",""value"":""never"",""points"":0}",,,,,,never,ai-chatbot,general-ai
+2025-09-24T00:54:18.640Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: drinking_frequency,drinking_frequency,Never,,,,never,,general-ai
+2025-09-24T00:54:22.778Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes"",""points"":1}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:22.816Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: car_ride,car_ride,Yes,,,,yes,,general-ai
+2025-09-24T00:54:24.745Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes"",""points"":1}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:24.780Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: relax_fit_in,relax_fit_in,Yes,,,,yes,,general-ai
+2025-09-24T00:54:26.696Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes"",""points"":1}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:26.741Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: alone_use,alone_use,Yes,,,,yes,,general-ai
+2025-09-24T00:54:28.736Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes"",""points"":1}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:28.766Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: forget_things,forget_things,Yes,,,,yes,,general-ai
+2025-09-24T00:54:31.419Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes"",""points"":1}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:31.457Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: family_friends_concern,family_friends_concern,Yes,,,,yes,,general-ai
+2025-09-24T00:54:33.380Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes"",""value"":""yes"",""points"":1}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:33.411Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: trouble_using,trouble_using,Yes,,,,yes,,general-ai
+2025-09-24T00:54:35.440Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes, that would be helpful"",""value"":""yes""}",,,,,,yes,ai-chatbot,general-ai
+2025-09-24T00:54:35.475Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_option_selected,Question: healthier_habits,healthier_habits,"Yes, that would be helpful",,,,yes,,general-ai
+2025-09-24T00:54:41.636Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""type"":""continue_scenario""}",,,,,,continue_scenario,ai-chatbot,general-ai
+2025-09-24T00:54:43.949Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""type"":""continue_question""}",,,,,,continue_question,ai-chatbot,general-ai
+2025-09-24T00:54:46.347Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""type"":""continue_scenario""}",,,,,,continue_scenario,ai-chatbot,general-ai
+2025-09-24T00:54:48.149Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""type"":""continue_question""}",,,,,,continue_question,ai-chatbot,general-ai
+2025-09-24T00:54:51.188Z,AVE123,session_1758675212645_awm3bgpgz,simulation_started,Started scenario: peer_pressure,,,,peer_pressure,,,,general-ai
+2025-09-24T00:54:55.184Z,AVE123,session_1758675212645_awm3bgpgz,message_sent,User sent message,,,,,ㅜㅑㅐ,,,general-ai
+2025-09-24T00:54:55.197Z,AVE123,session_1758675212645_awm3bgpgz,message_sent,User sent message,,,,,ㅐ,,,general-ai
+2025-09-24T00:54:55.895Z,AVE123,session_1758675212645_awm3bgpgz,simulation_option_selected,Scenario evaluation: Inappropriate,,ㅜㅑㅐ,,peer_pressure,,inappropriate,,general-ai
+2025-09-24T00:54:55.900Z,AVE123,session_1758675212645_awm3bgpgz,simulation_option_selected,Scenario evaluation: Inappropriate,,ㅐ,,peer_pressure,,inappropriate,,general-ai
+2025-09-24T00:55:03.340Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""value"":""retry"",""text"":""Try again with these suggestions""}",,,,,,retry,ai-chatbot,general-ai
+2025-09-24T00:55:06.040Z,AVE123,session_1758675212645_awm3bgpgz,message_sent,User sent message,,,,,hello,,,general-ai
+2025-09-24T00:55:06.374Z,AVE123,session_1758675212645_awm3bgpgz,simulation_option_selected,Scenario evaluation: Inappropriate,,hello,,peer_pressure,,inappropriate,,general-ai
+2025-09-24T00:55:08.405Z,AVE123,session_1758675212645_awm3bgpgz,simulation_started,Started scenario 2: designated_driver,,,,designated_driver,,,,general-ai
+2025-09-24T00:55:12.355Z,AVE123,session_1758675212645_awm3bgpgz,message_sent,User sent message,,,,,hello,,,general-ai
+2025-09-24T00:55:12.688Z,AVE123,session_1758675212645_awm3bgpgz,simulation_option_selected,Scenario evaluation: Inappropriate,,hello,,designated_driver,,inappropriate,,general-ai
+2025-09-24T00:55:31.002Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""value"":""retry"",""text"":""Try again with these suggestions""}",,,,,,retry,ai-chatbot,general-ai
+2025-09-24T00:55:33.046Z,AVE123,session_1758675212645_awm3bgpgz,message_sent,User sent message,,,,,hello,,,general-ai
+2025-09-24T00:55:33.389Z,AVE123,session_1758675212645_awm3bgpgz,simulation_option_selected,Scenario evaluation: Inappropriate,,hello,,designated_driver,,inappropriate,,general-ai
+2025-09-24T00:56:34.815Z,AVE123,session_1758675212645_awm3bgpgz,option_selected,"Option selected: {""value"":""retry"",""text"":""Try again with these suggestions""}",,,,,,retry,ai-chatbot,general-ai
+2025-09-24T00:56:36.343Z,AVE123,session_1758675212645_awm3bgpgz,message_sent,User sent message,,,,,ho,,,general-ai
+2025-09-24T00:56:40.204Z,AVE123,session_1758675212645_awm3bgpgz,simulation_option_selected,Scenario evaluation: Inappropriate,,ho,20,designated_driver,,inappropriate,,general-ai
+2025-09-24T00:56:42.260Z,AVE123,session_1758675212645_awm3bgpgz,simulation_started,Started scenario 3: helping_friend,,,,helping_friend,,,,general-ai
+2025-09-24T00:56:44.094Z,AVE123,session_1758675212645_awm3bgpgz,message_sent,User sent message,,,,,no,,,general-ai
+2025-09-24T00:56:46.311Z,AVE123,session_1758675212645_awm3bgpgz,simulation_option_selected,Scenario evaluation: Inappropriate,,no,20,helping_friend,,inappropriate,,general-ai
+2025-09-24T00:56:58.610Z,AVE123,session_1758675212645_awm3bgpgz,page_visited,User entered AI chatbot page,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:56:58.619Z,AVE123,session_1758675212645_awm3bgpgz,questionnaire_started,Questionnaire started,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:57:16.986Z,AVE123,session_1758675429384_r8rq2y8t7,code_entered,User entered verification code,,,,,,,home,general-ai
+2025-09-24T00:57:17.021Z,AVE123,session_1758675429384_r8rq2y8t7,code_verified,Code verification successful,,,,,,,home,general-ai
+2025-09-24T00:57:17.059Z,AVE123,session_1758675429384_r8rq2y8t7,page_visited,User reached welcome screen,,,,,,,welcome,general-ai
+2025-09-24T00:57:17.665Z,AVE123,session_1758675429384_r8rq2y8t7,chat_started,User started chat with general AI,,,,,,,welcome,general-ai
+2025-09-24T00:57:17.885Z,AVE123,session_1758675429384_r8rq2y8t7,questionnaire_started,Questionnaire started,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:57:17.891Z,AVE123,session_1758675429384_r8rq2y8t7,page_visited,User entered AI chatbot page,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:57:17.897Z,AVE123,session_1758675429384_r8rq2y8t7,page_visited,User entered AI chatbot page,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:57:17.905Z,AVE123,session_1758675429384_r8rq2y8t7,questionnaire_started,Questionnaire started,,,,,,,ai-chatbot,general-ai
+2025-09-24T00:57:29.204Z,AVE123,session_1758675429384_r8rq2y8t7,page_visited,User visited home page,,,,,,,home,general-ai
+2025-09-24T00:57:29.819Z,AVE123,session_1758675429384_r8rq2y8t7,button_clicked,Get Started button clicked,,,,,,,home,general-ai

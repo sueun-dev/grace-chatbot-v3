@@ -7,6 +7,7 @@ const ScenarioMessage = ({ message, onAnswer }) => {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [countdown, setCountdown] = useState(2);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
 
   useEffect(() => {
     // Countdown timer
@@ -36,6 +37,16 @@ const ScenarioMessage = ({ message, onAnswer }) => {
   const handleAnswerSelect = (option) => {
     setSelectedAnswer(option);
     setShowFeedback(true);
+
+    // Check if answer is incorrect
+    const isCorrect = option.value === message.questionData.correctAnswer ||
+                      option.value === "best" ||
+                      option.value === "good" ||
+                      (message.questionData.correctFeedback && option.value === "correct");
+
+    if (!isCorrect) {
+      setWrongAttempts(prev => prev + 1);
+    }
   };
 
   const handleFeedbackContinue = () => {
@@ -71,24 +82,35 @@ const ScenarioMessage = ({ message, onAnswer }) => {
 
           {/* Options */}
           <div className="space-y-[12px] mb-[16px]">
-            {message.questionData.options.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handleAnswerSelect(option)}
-                disabled={selectedAnswer !== null}
-                className={`w-full p-[16px] text-left rounded-[8px] border transition-all duration-200 ${
-                  selectedAnswer?.id === option.id
-                    ? option.correct
-                      ? "bg-green-50 border-green-300"
-                      : "bg-red-50 border-red-300"
-                    : "bg-white border-[#F0F2F5] hover:border-[#023E6E]"
-                }`}
-              >
-                <span className="text-[#19213D] font-medium text-[16px] leading-[130%]">
-                  {option.text}
-                </span>
-              </button>
-            ))}
+            {message.questionData.options.map((option, index) => {
+              const isCorrect = option.value === message.questionData.correctAnswer ||
+                                option.value === "best" ||
+                                option.value === "good" ||
+                                (message.questionData.correctFeedback && option.value === "correct");
+
+              const isSelected = selectedAnswer &&
+                               (selectedAnswer.value === option.value &&
+                                selectedAnswer.text === option.text);
+
+              return (
+                <button
+                  key={`${index}-${option.value}`}
+                  onClick={() => handleAnswerSelect(option)}
+                  disabled={selectedAnswer !== null}
+                  className={`w-full p-[16px] text-left rounded-[8px] border transition-all duration-200 ${
+                    isSelected
+                      ? isCorrect
+                        ? "bg-green-50 border-green-300"
+                        : "bg-red-50 border-red-300"
+                      : "bg-white border-[#F0F2F5] hover:border-[#023E6E]"
+                  }`}
+                >
+                  <span className="text-[#19213D] font-medium text-[16px] leading-[130%]">
+                    {option.text}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Feedback */}
@@ -96,14 +118,43 @@ const ScenarioMessage = ({ message, onAnswer }) => {
             <div className="mb-[16px] p-[16px] rounded-[8px] border border-[#F0F2F5] bg-white">
               <div className="flex items-center gap-[8px] mb-[8px]">
                 <span className="text-[20px]">
-                  {selectedAnswer.correct ? "✅" : "❌"}
+                  {(() => {
+                    const isCorrect = selectedAnswer.value === message.questionData.correctAnswer ||
+                                      selectedAnswer.value === "best" ||
+                                      selectedAnswer.value === "good" ||
+                                      (message.questionData.correctFeedback && selectedAnswer.value === "correct");
+                    return isCorrect ? "✅" : "❌";
+                  })()}
                 </span>
                 <span className="text-[#19213D] font-semibold text-[16px]">
-                  {selectedAnswer.correct ? "Correct!" : "Incorrect!"}
+                  {(() => {
+                    const isCorrect = selectedAnswer.value === message.questionData.correctAnswer ||
+                                      selectedAnswer.value === "best" ||
+                                      selectedAnswer.value === "good" ||
+                                      (message.questionData.correctFeedback && selectedAnswer.value === "correct");
+                    return isCorrect ? "Correct!" : "Incorrect!";
+                  })()}
                 </span>
               </div>
               <p className="text-[#666F8D] text-[14px] leading-[130%]">
-                {selectedAnswer.feedback}
+                {(() => {
+                  // Determine which feedback to show based on answer
+                  if (selectedAnswer.value === message.questionData.correctAnswer || selectedAnswer.value === "correct") {
+                    return message.questionData.correctFeedback;
+                  } else if (selectedAnswer.value === "best") {
+                    return message.questionData.correctFeedback || message.questionData.feedback;
+                  } else if (selectedAnswer.value === "good") {
+                    return message.questionData.goodFeedback || message.questionData.correctFeedback || "Great choice!";
+                  } else if (selectedAnswer.value === "needs_work" || selectedAnswer.value === "needs_help") {
+                    return message.questionData.needsWorkFeedback || message.questionData.needsHelpFeedback || message.questionData.incorrectFeedback;
+                  } else if (selectedAnswer.value === "yes") {
+                    return message.questionData.yesFeedback;
+                  } else if (selectedAnswer.value === "no") {
+                    return message.questionData.noFeedback;
+                  } else {
+                    return message.questionData.incorrectFeedback || "Let's try again!";
+                  }
+                })()}
               </p>
             </div>
           )}

@@ -7,13 +7,13 @@ import { ArrowRight } from "lucide-react";
 const OptionsMessage = ({ message, onOptionSelect }) => {
   const [isAnswered, setIsAnswered] = useState(false);
   const [selectedOption, setSelectedOption] = useState("");
-  console.log("🚀 ~ OptionsMessage ~ selectedOption:", selectedOption);
 
   const handleOptionSelect = (option) => {
     if (onOptionSelect) {
+      const optionValue = option.value || option;
+      setSelectedOption(optionValue);
       onOptionSelect(option);
       setIsAnswered(true);
-      setSelectedOption(option.value || option);
     }
   };
 
@@ -49,6 +49,21 @@ const OptionsMessage = ({ message, onOptionSelect }) => {
           <p className="text-[#666F8D] font-normal text-[14px] leading-[150%]">
             {message.content}
           </p>
+          {/* Display suggestions if present */}
+          {message.suggestions && message.suggestions.length > 0 && (
+            <div className="bg-blue-50 p-[12px] rounded-[8px] border-l-4 border-blue-500">
+              <p className="text-[12px] font-semibold text-blue-700 mb-[8px]">
+                Suggestions for improvement:
+              </p>
+              <ul className="list-disc list-inside space-y-[4px]">
+                {message.suggestions.map((suggestion, idx) => (
+                  <li key={idx} className="text-[12px] text-blue-600">
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {hasMoreThanTwoOptions ? (
             // Radio buttons for 3+ options
             <div className="flex flex-col gap-[12px]">

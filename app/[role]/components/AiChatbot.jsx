@@ -6,13 +6,15 @@ import Sidebar from "./ui/Sidebar";
 import clsx from "clsx";
 import { useQuestionnaire } from "../hooks/useQuestionnaire";
 import { useScenarioLearning } from "../hooks/useScenarioLearning";
-import { useScenarioSimulation } from "../hooks/useScenarioSimulation";
+import { useScenarioSimulationEnhanced } from "../hooks/useScenarioSimulationEnhanced";
+import { useFreeChat } from "../hooks/useFreeChat";
 import { useChat } from "../hooks/useChat";
 import { useRouter } from "next/navigation";
+import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 const AiChatbot = () => {
   const router = useRouter();
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [showChatList, setShowChatList] = useState(true); // Set to true by default
 
   // Custom hooks
@@ -48,7 +50,10 @@ const AiChatbot = () => {
     handleSimulationOptionSelect,
     handleUserInput,
     resetSimulationState,
-  } = useScenarioSimulation();
+  } = useScenarioSimulationEnhanced();
+
+  const { isFreeChatActive, startFreeChat, sendMessageToAI, endFreeChat } =
+    useFreeChat();
 
   const currentUser = {
     name: "User",
@@ -57,6 +62,12 @@ const AiChatbot = () => {
 
   // Automatically start questionnaire when component mounts
   useEffect(() => {
+    // Log chatbot page visit
+    logAction({
+      actionType: ACTION_TYPES.PAGE_VISITED,
+      actionDetails: "User entered AI chatbot page",
+      pageVisited: "ai-chatbot",
+    });
     handleStartQuestionnaire();
   }, []);
 
@@ -65,8 +76,15 @@ const AiChatbot = () => {
     setShowSidebar(!showSidebar);
   };
 
-  const handleStartQuestionnaire = () => {
+  const handleStartQuestionnaire = async () => {
     startQuestionnaire(setMessages, setShowChatList, setIsLoading);
+
+    // Log questionnaire start
+    await logAction({
+      actionType: ACTION_TYPES.QUESTIONNAIRE_STARTED,
+      actionDetails: "Questionnaire started",
+      pageVisited: "ai-chatbot",
+    });
   };
 
   const handleOptionSelect = async (option) => {
@@ -75,6 +93,20 @@ const AiChatbot = () => {
       option && typeof option === "object" && (option.type || option.value)
         ? option.type || option.value
         : option;
+
+    // Log option selection
+    await logAction({
+      actionType: ACTION_TYPES.OPTION_SELECTED,
+      actionDetails: `Option selected: ${JSON.stringify(option)}`,
+      optionSelected: normalized,
+      pageVisited: "ai-chatbot",
+    });
+
+    // Handle free chat start
+    if (normalized === "start_free_chat") {
+      startFreeChat(setMessages);
+      return;
+    }
 
     // Handle scenario simulation responses
     const simulationResult = handleSimulationOptionSelect(option, setMessages);
@@ -148,17 +180,22 @@ const AiChatbot = () => {
           showSidebar={showSidebar}
         />
         {/* Chat Container */}
-        <div className="flex-grow p-[20px] flex flex-col justify-center items-center overflow-hidden  bg-[url('/bg-gradient.png')] bg-cover bg-center">
+        <div className="flex-grow p-[40px] flex flex-col justify-center items-center overflow-hidden  bg-[url('/bg-gradient.png')] bg-cover bg-center">
           <ChatList
             messages={messages}
-            onSendMessage={(message) =>
-              handleSendMessage(message, handleUserInput)
-            }
+            onSendMessage={(message) => {
+              // Check if in free chat mode
+              if (isFreeChatActive) {
+                sendMessageToAI(message, setMessages, setIsLoading);
+              } else {
+                handleSendMessage(message, handleUserInput);
+              }
+            }}
             onOptionSelect={handleOptionSelect}
             isLoading={isLoading}
             currentUser={currentUser}
             pendingInteractiveMessage={pendingInteractiveMessage}
-            scenarioMode={simulationState.waitingForInput}
+            scenarioMode={simulationState.waitingForInput || isFreeChatActive}
           />
         </div>
       </div>
