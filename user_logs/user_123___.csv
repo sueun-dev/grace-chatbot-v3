@@ -1,0 +1,9 @@
+timestamp,user_identifier,session_id,action_type,action_details,question_id,response,score,scenario_type,message_content,option_selected,page_visited,chatbot_type
+2025-10-06T01:43:10.323Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,code_entered,User entered verification code,,,,,,,home,general-ai
+2025-10-06T01:43:10.364Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,code_verified,Code verification successful,,,,,,,home,general-ai
+2025-10-06T01:43:10.403Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,page_visited,User reached welcome screen,,,,,,,welcome,general-ai
+2025-10-06T01:43:12.248Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,chat_started,User started chat with general AI,,,,,,,welcome,general-ai
+2025-10-06T01:43:12.403Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,questionnaire_started,Questionnaire started,,,,,,,ai-chatbot,general-ai
+2025-10-06T01:43:12.411Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,page_visited,User entered AI chatbot page,,,,,,,ai-chatbot,general-ai
+2025-10-06T01:43:33.263Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,option_selected,"Option selected: {""id"":""yes"",""text"":""Yes, let's start"",""value"":""yes""}",,,,,,yes,ai-chatbot,general-ai
+2025-10-06T01:43:33.302Z,123ㅁㅉㅇ,session_1759714651725_t4e0guwo4,questionnaire_option_selected,Question: intro_question,intro_question,"Yes, let's start",,,,yes,,general-ai

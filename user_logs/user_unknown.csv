@@ -622,3 +622,31 @@ timestamp,user_identifier,session_id,action_type,action_details,question_id,resp
 2025-09-24T03:16:03.558Z,,session_1758680758782_ekiou55cw,message_sent,User sent message after completion,,,,,,,,general-ai
 2025-09-24T03:16:07.794Z,,session_1758680758782_ekiou55cw,message_sent,User sent message,,,,,Thank you,,,general-ai
 2025-09-24T03:16:07.840Z,,session_1758680758782_ekiou55cw,message_sent,User sent message after completion,,,,,,,,general-ai
+2025-09-24T04:01:24.733Z,,session_1758686484475_tt10hofew,page_visited,User visited home page,,,,,,,home,general-ai
+2025-09-24T04:01:28.158Z,,session_1758686484475_tt10hofew,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-09-24T21:40:23.260Z,,session_1758750023181_nfl4zflbz,page_visited,User visited home page,,,,,,,home,general-ai
+2025-09-24T22:06:05.325Z,,session_1758750023181_nfl4zflbz,page_visited,User visited home page,,,,,,,home,general-ai
+2025-09-24T22:06:31.173Z,,session_1758750023181_nfl4zflbz,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-09-25T17:34:59.218Z,,session_1758821699117_n2d3vmvl5,page_visited,User visited home page,,,,,,,home,general-ai
+2025-09-30T01:47:44.610Z,,session_1759196862759_o2mn0ks1z,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-06T01:37:31.850Z,,session_1759714651725_t4e0guwo4,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-06T01:37:34.305Z,,session_1759714651725_t4e0guwo4,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-06T01:41:18.273Z,,session_1759714878200_ec2eoags2,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-09T21:16:00.753Z,,session_1760044560686_2iwfmjyeh,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-09T21:16:02.059Z,,session_1760044560686_2iwfmjyeh,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-09T21:16:17.092Z,,session_1760044577027_gd6y5ulov,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-09T21:18:08.381Z,,session_1760044577027_gd6y5ulov,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-17T22:55:21.968Z,,session_1760741717051_j5dyi69gj,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-20T16:54:01.439Z,,session_1760979241407_w8qhtdjsw,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-20T16:54:02.611Z,,session_1760979241407_w8qhtdjsw,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-22T17:03:52.532Z,,session_1761152631603_otzqee1ze,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-22T17:03:53.971Z,,session_1761152631603_otzqee1ze,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-27T05:31:43.922Z,,session_1761543103839_jha94y1jh,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-27T05:31:49.161Z,,session_1761543103839_jha94y1jh,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-27T05:32:08.439Z,,session_1761543128384_qq64qbv1d,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-27T05:32:09.484Z,,session_1761543128384_qq64qbv1d,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-27T05:33:02.656Z,,session_1761543128384_qq64qbv1d,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-27T05:33:03.527Z,,session_1761543128384_qq64qbv1d,button_clicked,Get Started button clicked,,,,,,,home,general-ai
+2025-10-27T06:03:49.998Z,,session_1761545029933_mz3pva1xk,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-27T06:06:57.603Z,,session_1761545029933_mz3pva1xk,page_visited,User visited home page,,,,,,,home,general-ai
+2025-10-27T06:06:58.442Z,,session_1761545029933_mz3pva1xk,button_clicked,Get Started button clicked,,,,,,,home,general-ai
