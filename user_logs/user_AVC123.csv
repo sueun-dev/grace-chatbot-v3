@@ -1,0 +1,7 @@
+timestamp,user_identifier,session_id,action_type,action_details,question_id,response,score,scenario_type,message_content,option_selected,page_visited,chatbot_type
+2025-09-24T04:01:32.390Z,AVC123,session_1758686484475_tt10hofew,code_entered,User entered verification code,,,,,,,home,general-ai
+2025-09-24T04:01:32.434Z,AVC123,session_1758686484475_tt10hofew,code_verified,Code verification successful,,,,,,,home,general-ai
+2025-09-24T04:01:32.474Z,AVC123,session_1758686484475_tt10hofew,page_visited,User reached welcome screen,,,,,,,welcome,general-ai
+2025-09-24T04:01:33.119Z,AVC123,session_1758686484475_tt10hofew,chat_started,User started chat with general AI,,,,,,,welcome,general-ai
+2025-09-24T04:01:33.380Z,AVC123,session_1758686484475_tt10hofew,questionnaire_started,Questionnaire started,,,,,,,ai-chatbot,general-ai
+2025-09-24T04:01:33.387Z,AVC123,session_1758686484475_tt10hofew,page_visited,User entered AI chatbot page,,,,,,,ai-chatbot,general-ai

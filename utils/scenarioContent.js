@@ -329,9 +329,9 @@ export const scenarioQuestions = {
     question2: {
       question: "Which of these is a good alternative to drinking when stressed?",
       options: [
-        { text: "Running or yoga", value: "good" },
-        { text: "Painting or playing video games", value: "good" },
-        { text: "Calling a friend", value: "good" },
+        { text: "Running or yoga", value: "incorrect" },
+        { text: "Painting or playing video games", value: "incorrect" },
+        { text: "Calling a friend", value: "incorrect" },
         { text: "All of the above", value: "best" }
       ],
       correctFeedback: "✅ That's right! There are so many ways to manage stress without alcohol. Finding what works best for you is key."
@@ -364,9 +364,9 @@ export const scenarioQuestions = {
     question2: {
       question: "What's a good strategy to help limit alcohol consumption?",
       options: [
-        { text: "Set a drink limit before going out", value: "good" },
-        { text: "Space out drinks with water or food", value: "good" },
-        { text: "Find supportive friends or family to check in with", value: "good" },
+        { text: "Set a drink limit before going out", value: "incorrect" },
+        { text: "Space out drinks with water or food", value: "incorrect" },
+        { text: "Find supportive friends or family to check in with", value: "incorrect" },
         { text: "All of the above", value: "best" }
       ],
       correctFeedback: "✅ That's right! Setting limits, drinking water, and having a support system all help you drink less.",

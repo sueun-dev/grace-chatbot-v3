@@ -22,14 +22,13 @@ export const QUESTIONNAIRE_SCHEMA = {
       id: "age_outside_range",
       type: "options",
       content:
-        "This assessment is designed for individuals between 18 and 20 years old. If you're younger or older, I can still provide general information on alcohol awareness. Would you like to continue?",
+        "This assessment is designed for individuals between 21 and 25 years old. If you're younger or older, I can still provide general information on alcohol awareness. Would you like to continue?",
       options: [
         {
           id: "continue",
           text: "Yes, I'd still like to learn more",
           value: "continue",
         },
-        { id: "end", text: "No, I'd rather not", value: "end" },
       ],
       nextQuestion: {
         continue: "alcohol_experience",
