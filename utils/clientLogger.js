@@ -52,6 +52,7 @@ export const ACTION_TYPES = {
   QUESTIONNAIRE_STARTED: 'questionnaire_started',
   QUESTIONNAIRE_OPTION_SELECTED: 'questionnaire_option_selected',
   QUESTIONNAIRE_COMPLETED: 'questionnaire_completed',
+  ASSESSMENT_COMPLETED: 'assessment_completed',
   
   // Scenario
   SCENARIO_STARTED: 'scenario_started',

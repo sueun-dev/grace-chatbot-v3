@@ -1,394 +1,389 @@
 /**
- * Unit tests for csvLogger utility
- * Tests CSV file creation, writing, and user log management
+ * Unit tests for csvLogger utility (aggregated CSV design)
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'fs'
+import path from 'path'
 import {
   ensureCSVDirectory,
   initializeUserCSV,
   logUserAction,
   getUserLogs,
-  getAllUsers
-} from '@/utils/csvLogger';
+  getAllUsers,
+  getAggregatedCSVData,
+  getAggregatedCSVFilePath
+} from '@/utils/csvLogger'
 
-// Mock fs module
-jest.mock('fs');
+jest.mock('fs')
 
-describe('CSV Logger Unit Tests', () => {
-  const mockCsvDir = path.join(process.cwd(), 'user_logs');
-  const testUserId = 'test_user_123';
-  const mockCsvPath = path.join(mockCsvDir, `user_${testUserId}.csv`);
+describe('Aggregated CSV Logger', () => {
+  const csvDir = path.join(process.cwd(), 'user_logs')
+  const csvFile = path.join(csvDir, 'user_actions.csv')
+  const baseHeader =
+    'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code\n'
+
+  const parseCsv = (content) => {
+    const rows = []
+    let current = ''
+    let inQuotes = false
+    let row = []
+
+    const pushField = () => {
+      row.push(current)
+      current = ''
+    }
+    const pushRow = () => {
+      rows.push(row)
+      row = []
+    }
+
+    for (let index = 0; index < content.length; index++) {
+      const char = content[index]
+      if (char === '"') {
+        if (inQuotes && content[index + 1] === '"') {
+          current += '"'
+          index++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (char === ',' && !inQuotes) {
+        pushField()
+      } else if (char === '\n' && !inQuotes) {
+        pushField()
+        pushRow()
+      } else {
+        current += char
+      }
+    }
+
+    if (current.length > 0 || row.length > 0) {
+      pushField()
+      pushRow()
+    }
+
+    return rows
+  }
+
+  const csvToRecords = (content) => {
+    const rows = parseCsv(content)
+    const headers = rows[0] ?? []
+    const dataRows = rows.slice(1).filter((r) => r.some((cell) => String(cell ?? '').trim() !== ''))
+    const records = dataRows.map((r) => {
+      const record = {}
+      headers.forEach((header, index) => {
+        if (header) record[header] = r[index] ?? ''
+      })
+      return record
+    })
+    return { headers, records }
+  }
+
+  const setFsExistsState = ({ dir = true, file = true } = {}) => {
+    fs.existsSync.mockImplementation((target) => {
+      if (target === csvDir) return dir
+      if (target === csvFile) return file
+      return true
+    })
+  }
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    // Default mock implementations
-    fs.existsSync.mockReturnValue(false);
-    fs.mkdirSync.mockReturnValue(undefined);
-    fs.writeFileSync.mockReturnValue(undefined);
-    fs.appendFileSync.mockReturnValue(undefined);
-    fs.readdirSync.mockReturnValue([]);
-  });
+    jest.clearAllMocks()
+    setFsExistsState({ dir: true, file: true })
+    fs.mkdirSync.mockImplementation(() => {})
+    fs.writeFileSync.mockImplementation(() => {})
+    fs.renameSync.mockImplementation(() => {})
+    fs.readFileSync.mockReturnValue(baseHeader)
+  })
 
   describe('ensureCSVDirectory', () => {
-    test('should create directory if it does not exist', () => {
-      fs.existsSync.mockReturnValue(false);
+    test('creates directory and base CSV when missing', async () => {
+      setFsExistsState({ dir: false, file: false })
 
-      ensureCSVDirectory();
+      await ensureCSVDirectory()
 
-      expect(fs.existsSync).toHaveBeenCalledWith(mockCsvDir);
-      expect(fs.mkdirSync).toHaveBeenCalledWith(mockCsvDir, { recursive: true });
-    });
+      expect(fs.mkdirSync).toHaveBeenCalledWith(csvDir, { recursive: true })
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        csvFile,
+        expect.stringContaining('user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code')
+      )
+    })
 
-    test('should not create directory if it already exists', () => {
-      fs.existsSync.mockReturnValue(true);
-
-      ensureCSVDirectory();
-
-      expect(fs.existsSync).toHaveBeenCalledWith(mockCsvDir);
-      expect(fs.mkdirSync).not.toHaveBeenCalled();
-    });
-  });
+    test('skips creation when already present', async () => {
+      await ensureCSVDirectory()
+      expect(fs.mkdirSync).not.toHaveBeenCalled()
+      expect(fs.writeFileSync).not.toHaveBeenCalledWith(csvFile, expect.any(String))
+    })
+  })
 
   describe('initializeUserCSV', () => {
-    test('should create CSV file with headers for new user', () => {
-      fs.existsSync.mockReturnValue(false);
+    test('adds an empty row for a new user', async () => {
+      const csvContent = 'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count\n'
+      fs.readFileSync.mockReturnValue(csvContent)
 
-      initializeUserCSV(testUserId);
+      await initializeUserCSV('user-123')
 
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        expect.stringContaining(`user_${testUserId}.csv`),
-        expect.stringContaining('timestamp,user_identifier,session_id')
-      );
-    });
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { records } = csvToRecords(output)
+      const row = records.find((record) => record.user_key === 'user-123')
+      expect(row).toMatchObject({
+        user_key: 'user-123',
+        user_identifier: 'user-123',
+        chatbot_type: 'general-ai',
+        risk_level: '',
+        risk_description: '',
+        risk_recommendation: '',
+        total_score: '0',
+        action_count: '0',
+        completion_code: ''
+      })
+      const tempPath = fs.writeFileSync.mock.calls[0][0]
+      expect(fs.renameSync).toHaveBeenCalledWith(tempPath, csvFile)
+    })
 
-    test('should not create file if it already exists', () => {
-      fs.existsSync.mockImplementation((path) => {
-        if (path === mockCsvDir) return true;
-        if (path.includes(`user_${testUserId}.csv`)) return true;
-        return false;
-      });
+    test('does not duplicate an existing user row', async () => {
+      const existing = [
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count',
+        'Original_User,Original User,general-ai,,5,1'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(existing)
 
-      initializeUserCSV(testUserId);
+      await initializeUserCSV('Original User')
 
-      expect(fs.writeFileSync).not.toHaveBeenCalled();
-    });
-
-    test('should handle special characters in user identifier', () => {
-      const specialUserId = 'user@#$%^&*()';
-      fs.existsSync.mockReturnValue(false);
-
-      initializeUserCSV(specialUserId);
-
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('user_user_________.csv'),  // 9 special chars = 9 underscores
-        expect.any(String)
-      );
-    });
-
-    test('should handle null or undefined user identifier', () => {
-      fs.existsSync.mockReturnValue(false);
-
-      initializeUserCSV(null);
-
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('user_unknown.csv'),
-        expect.any(String)
-      );
-    });
-  });
+      expect(fs.writeFileSync).not.toHaveBeenCalled()
+    })
+  })
 
   describe('logUserAction', () => {
-    test('should log action to user-specific CSV file', () => {
-      const actionData = {
-        userIdentifier: testUserId,
-        sessionId: 'session_123',
+    test('creates action columns and stores first user action', async () => {
+      const payload = {
+        userIdentifier: 'MatrixUser01',
+        sessionId: 'session-xyz',
         actionType: 'BUTTON_CLICKED',
-        actionDetails: 'Start button clicked',
-        messageContent: 'Hello',
-        score: 100
-      };
+        actionDetails: 'Start test',
+        messageContent: 'hello'
+      }
 
-      fs.existsSync.mockImplementation((path) => {
-        if (path === mockCsvDir) return true;
-        return false;
-      });
+      await logUserAction(payload)
 
-      logUserAction(actionData);
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { headers, records } = csvToRecords(output)
+      expect(headers).toEqual(expect.arrayContaining(['action_1_timestamp', 'action_1_action_type', 'action_1_session_id']))
+      const row = records.find((record) => record.user_key === 'MatrixUser01')
+      expect(row).toBeTruthy()
+      expect(row.action_count).toBe('1')
+      expect(row.action_1_session_id).toBe('session-xyz')
+      expect(row.action_1_action_type).toBe('BUTTON_CLICKED')
+      expect(row.action_1_message_content).toBe('hello')
+      const tempPath = fs.writeFileSync.mock.calls[0][0]
+      expect(fs.renameSync).toHaveBeenCalledWith(tempPath, csvFile)
+    })
 
-      // Check that file was created with headers
-      expect(fs.writeFileSync).toHaveBeenCalled();
+    test('appends additional actions to the same user row', async () => {
+      const existing = [
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,action_1_timestamp,action_1_action_type',
+        'MatrixUser01,MatrixUser01,general-ai,,5,1,2024-01-01T00:00:00.000Z,INIT'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(existing)
 
-      // Check that data was appended
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
-        expect.stringContaining(`user_${testUserId}.csv`),
-        expect.stringContaining(actionData.sessionId)
-      );
-    });
+      await logUserAction({
+        userIdentifier: 'MatrixUser01',
+        actionType: 'ANSWERED',
+        response: '42'
+      })
 
-    test('should escape CSV special characters', () => {
-      const actionData = {
-        userIdentifier: testUserId,
-        messageContent: 'Message with, comma and "quotes" and\nnewline',
-        actionType: 'MESSAGE_SENT'
-      };
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { headers, records } = csvToRecords(output)
+      expect(headers).toEqual(expect.arrayContaining(['action_2_timestamp', 'action_2_action_type', 'action_2_response']))
+      const row = records.find((record) => record.user_key === 'MatrixUser01')
+      expect(row.action_count).toBe('2')
+      expect(row.action_2_action_type).toBe('ANSWERED')
+      expect(row.action_2_response).toBe('42')
+    })
 
-      fs.existsSync.mockImplementation((path) => {
-        if (path === mockCsvDir) return true;
-        return false;
-      });
+    test('sanitizes user identifier for row key while keeping original label', async () => {
+      await logUserAction({ userIdentifier: 'user@domain.com', actionType: 'STEP' })
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { records } = csvToRecords(output)
+      const row = records.find((record) => record.user_key === 'user_domain_com')
+      expect(row).toBeTruthy()
+      expect(row.user_identifier).toBe('user@domain.com')
+    })
 
-      logUserAction(actionData);
+    test('captures dynamic fields and updates total score', async () => {
+      const existing = [
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_action_type,action_1_score',
+        'Dynamic_User,Dynamic User,general-ai,,5,1,,2024-01-01T00:00:00.000Z,INIT,5'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(existing)
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.stringContaining('"Message with, comma and ""quotes"" and\nnewline"')
-      );
-    });
+      await logUserAction({
+        userIdentifier: 'Dynamic User',
+        actionType: 'ASSESSMENT_COMPLETED',
+        assessmentScore: 25,
+        riskLevel: 'moderate',
+        riskDescription: 'desc',
+        riskRecommendation: 'rec',
+        totalScore: 25
+      })
 
-    test('should handle missing user identifier', () => {
-      const actionData = {
-        actionType: 'ANONYMOUS_ACTION'
-      };
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { headers, records } = csvToRecords(output)
+      expect(headers).not.toContain('action_2_total_score')
+      expect(headers).not.toContain('action_2_risk_level')
+      expect(headers).not.toContain('action_2_risk_description')
+      expect(headers).not.toContain('action_2_risk_recommendation')
+      const row = records.find((record) => record.user_key === 'Dynamic_User')
+      expect(row).toMatchObject({
+        user_identifier: 'Dynamic User',
+        risk_level: 'moderate',
+        risk_description: 'desc',
+        risk_recommendation: 'rec',
+        total_score: '25',
+        action_count: '2',
+      })
+    })
 
-      fs.existsSync.mockImplementation((path) => {
-        if (path === mockCsvDir) return true;
-        return false;
-      });
+    test('uses a session-keyed row before user identifier exists', async () => {
+      fs.readFileSync.mockReturnValue(baseHeader)
 
-      logUserAction(actionData);
+      await logUserAction({
+        sessionId: 'session_abc',
+        actionType: 'PAGE_VISITED',
+        actionDetails: 'Entered site'
+      })
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('user_unknown.csv'),
-        expect.any(String)
-      );
-    });
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { records } = csvToRecords(output)
+      const row = records.find((record) => record.user_key === '__session__session_abc')
+      expect(row).toBeTruthy()
+      expect(row.user_identifier).toBe('unknown')
+      expect(row.action_1_action_type).toBe('PAGE_VISITED')
+    })
 
-    test('should include timestamp in logged data', () => {
-      const actionData = {
-        userIdentifier: testUserId,
-        actionType: 'TEST_ACTION'
-      };
+    test('merges a session-keyed row into the user row once identified', async () => {
+      const existing = [
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_session_id,action_1_action_type',
+        '__session__session_abc,unknown,general-ai,,0,1,,2024-01-01T00:00:00.000Z,session_abc,PAGE_VISITED'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(existing)
 
-      fs.existsSync.mockImplementation((path) => {
-        if (path === mockCsvDir) return true;
-        return false;
-      });
+      await logUserAction({
+        userIdentifier: 'USER001',
+        sessionId: 'session_abc',
+        actionType: 'CODE_ENTERED'
+      })
 
-      const mockDate = new Date('2024-01-01T12:00:00.000Z');
-      const originalDate = global.Date;
-      global.Date = jest.fn(() => mockDate);
-      global.Date.now = originalDate.now;
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { records } = csvToRecords(output)
+      const sessionRow = records.find((record) => record.user_key === '__session__session_abc')
+      expect(sessionRow).toBeFalsy()
+      const userRow = records.find((record) => record.user_key === 'USER001')
+      expect(userRow).toBeTruthy()
+      expect(userRow.action_count).toBe('2')
+      expect(userRow.action_1_action_type).toBe('PAGE_VISITED')
+      expect(userRow.action_2_action_type).toBe('CODE_ENTERED')
+    })
 
-      logUserAction(actionData);
+    test('avoids creating a late session row when user row already exists for the session', async () => {
+      const existing = [
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_session_id,action_1_action_type',
+        'USER001,USER001,general-ai,,0,1,,2024-01-01T00:00:00.000Z,session_abc,CODE_ENTERED'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(existing)
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.stringContaining('2024-01-01T12:00:00.000Z')
-      );
+      await logUserAction({
+        sessionId: 'session_abc',
+        actionType: 'PAGE_VISITED'
+      })
 
-      global.Date = originalDate;
-    });
-  });
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { records } = csvToRecords(output)
+      const sessionRow = records.find((record) => record.user_key === '__session__session_abc')
+      expect(sessionRow).toBeFalsy()
+      const userRow = records.find((record) => record.user_key === 'USER001')
+      expect(userRow).toBeTruthy()
+      expect(userRow.action_count).toBe('2')
+      expect(userRow.action_2_action_type).toBe('PAGE_VISITED')
+    })
+
+    test('stores completion code on the base user row', async () => {
+      fs.readFileSync.mockReturnValue(baseHeader)
+
+      await logUserAction({
+        userIdentifier: 'USER001',
+        sessionId: 'session_abc',
+        actionType: 'SIMULATION_COMPLETED',
+        completionCode: 'ABC123'
+      })
+
+      const output = fs.writeFileSync.mock.calls[0][1]
+      const { records } = csvToRecords(output)
+      const row = records.find((record) => record.user_key === 'USER001')
+      expect(row).toBeTruthy()
+      expect(row.completion_code).toBe('ABC123')
+    })
+  })
 
   describe('getUserLogs', () => {
-    test('should return empty array if file does not exist', () => {
-      fs.existsSync.mockReturnValue(false);
+    test('returns structured actions for an existing user', () => {
+      const csvContent = [
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_action_type,action_1_response,action_2_timestamp,action_2_action_type',
+        'MatrixUser01,MatrixUser01,doctor-ai,High Risk,15,2,,2024-01-01T00:00:00.000Z,INIT,,2024-01-01T00:05:00.000Z,ANSWERED'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(csvContent)
 
-      const logs = getUserLogs(testUserId);
+      const logs = getUserLogs('MatrixUser01')
 
-      expect(logs).toEqual([]);
-    });
+      expect(logs).toHaveLength(2)
+      expect(logs[0]).toMatchObject({ timestamp: '2024-01-01T00:00:00.000Z', action_type: 'INIT', chatbot_type: 'doctor-ai', risk_level: 'High Risk', total_score: '15' })
+      expect(logs[1]).toMatchObject({ action_type: 'ANSWERED', chatbot_type: 'doctor-ai', risk_level: 'High Risk', total_score: '15' })
+    })
 
-    test('should parse and return user logs correctly', () => {
-      const csvContent = `timestamp,user_identifier,session_id,action_type,action_details,question_id,response,score,scenario_type,message_content,option_selected,page_visited,chatbot_type
-2024-01-01T12:00:00.000Z,${testUserId},session_123,BUTTON_CLICKED,Start clicked,,,,,Hello,,,general-ai
-2024-01-01T12:01:00.000Z,${testUserId},session_123,MESSAGE_SENT,User message,,,,,Hi there,,,general-ai`;
+    test('returns empty array for users without entries', () => {
+      fs.readFileSync.mockReturnValue(baseHeader)
+      const logs = getUserLogs('Missing')
+      expect(logs).toEqual([])
+    })
+  })
 
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue(csvContent);
+  describe('getAllUsers & getAggregatedCSVData', () => {
+    test('returns user labels from CSV data', () => {
+      const csvContent = [
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code',
+        'safe1,First User,general-ai,,0,0,',
+        'safe2,Second User,doctor-ai,Moderate,10,1,'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(csvContent)
 
-      const logs = getUserLogs(testUserId);
+      expect(getAllUsers()).toEqual(['First User', 'Second User'])
+    })
 
-      expect(logs).toHaveLength(2);
-      expect(logs[0]).toMatchObject({
-        timestamp: '2024-01-01T12:00:00.000Z',
-        user_identifier: testUserId,
-        session_id: 'session_123',
-        action_type: 'BUTTON_CLICKED'
-      });
-    });
+    test('exposes raw headers and rows for download routes', () => {
+      const csvContent = [
+        'user_key,user_identifier,action_count,action_1_action_type',
+        'user1,User One,1,CLICK'
+      ].join('\n')
+      fs.readFileSync.mockReturnValue(csvContent)
 
-    test('should handle empty CSV file', () => {
-      const csvContent = 'timestamp,user_identifier,session_id,action_type\n';
+      const { headers, records } = getAggregatedCSVData()
 
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue(csvContent);
+      expect(headers).toEqual([
+        'user_key',
+        'user_identifier',
+        'chatbot_type',
+        'risk_level',
+        'risk_description',
+        'risk_recommendation',
+        'total_score',
+        'action_count',
+        'completion_code',
+        'action_1_action_type'
+      ])
+      expect(records[0]).toMatchObject({ user_key: 'user1', action_count: '1' })
+    })
 
-      const logs = getUserLogs(testUserId);
-
-      expect(logs).toEqual([]);
-    });
-
-    test('should filter out empty lines', () => {
-      const csvContent = `timestamp,user_identifier,session_id,action_type
-2024-01-01T12:00:00.000Z,${testUserId},session_123,TEST_ACTION
-
-2024-01-01T12:01:00.000Z,${testUserId},session_123,ANOTHER_ACTION`;
-
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue(csvContent);
-
-      const logs = getUserLogs(testUserId);
-
-      expect(logs).toHaveLength(2);
-    });
-  });
-
-  describe('getAllUsers', () => {
-    test('should return empty array when no CSV files exist', () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.readdirSync.mockReturnValue([]);
-
-      const users = getAllUsers();
-
-      expect(users).toEqual([]);
-    });
-
-    test('should return list of users from CSV files', () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.readdirSync.mockReturnValue([
-        'user_alice.csv',
-        'user_bob_123.csv',
-        'user_charlie.csv',
-        'other_file.txt'
-      ]);
-
-      const users = getAllUsers();
-
-      expect(users).toEqual(['alice', 'bob_123', 'charlie']);
-    });
-
-    test('should handle directory not existing', () => {
-      fs.existsSync.mockReturnValue(false);
-
-      const users = getAllUsers();
-
-      expect(fs.mkdirSync).toHaveBeenCalledWith(mockCsvDir, { recursive: true });
-      expect(users).toEqual([]);
-    });
-
-    test('should ignore non-CSV files and files not matching pattern', () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.readdirSync.mockReturnValue([
-        'user_valid.csv',
-        'invalid.csv',
-        'user_valid.txt',
-        '.hidden_user.csv',
-        'user_.csv', // Edge case: empty user id
-        'temp_user_file.csv',
-        'users.csv' // Not matching pattern
-      ]);
-
-      const users = getAllUsers();
-
-      expect(users).toEqual(['valid', '']); // Only 'user_valid.csv' and 'user_.csv' match
-    });
-  });
-
-  describe('Edge Cases and Error Handling', () => {
-    test('should handle file system errors gracefully', () => {
-      fs.existsSync.mockImplementation(() => {
-        throw new Error('File system error');
-      });
-
-      expect(() => ensureCSVDirectory()).toThrow('File system error');
-    });
-
-    test('should handle very long user identifiers', () => {
-      const longUserId = 'a'.repeat(300);
-      fs.existsSync.mockReturnValue(false);
-
-      initializeUserCSV(longUserId);
-
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        expect.stringContaining(`user_${'a'.repeat(300)}.csv`),
-        expect.any(String)
-      );
-    });
-
-    test('should handle concurrent writes to same user file', () => {
-      const actionData1 = {
-        userIdentifier: testUserId,
-        actionType: 'ACTION_1'
-      };
-
-      const actionData2 = {
-        userIdentifier: testUserId,
-        actionType: 'ACTION_2'
-      };
-
-      fs.existsSync.mockImplementation((path) => {
-        if (path === mockCsvDir) return true;
-        if (path.includes('.csv')) return true;
-        return false;
-      });
-
-      logUserAction(actionData1);
-      logUserAction(actionData2);
-
-      expect(fs.appendFileSync).toHaveBeenCalledTimes(2);
-    });
-
-    test('should handle malformed CSV content when reading', () => {
-      const malformedCsv = `timestamp,user_identifier
-2024-01-01T12:00:00.000Z,${testUserId},extra,fields,that,should,not,be,here
-incomplete_line`;
-
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue(malformedCsv);
-
-      const logs = getUserLogs(testUserId);
-
-      // Should still parse what it can
-      expect(logs).toBeDefined();
-      expect(Array.isArray(logs)).toBe(true);
-    });
-  });
-
-  describe('Performance Considerations', () => {
-    test('should handle large number of users efficiently', () => {
-      const userFiles = Array.from({ length: 3000 }, (_, i) => `user_user${i}.csv`);
-
-      fs.existsSync.mockReturnValue(true);
-      fs.readdirSync.mockReturnValue(userFiles);
-
-      const startTime = performance.now();
-      const users = getAllUsers();
-      const endTime = performance.now();
-
-      expect(users).toHaveLength(3000);
-      expect(endTime - startTime).toBeLessThan(1000); // Should complete in less than 1 second
-    });
-
-    test('should handle large log files efficiently', () => {
-      // Simulate a large CSV with many entries
-      const headers = 'timestamp,user_identifier,session_id,action_type';
-      const rows = Array.from({ length: 10000 }, (_, i) =>
-        `2024-01-01T12:00:${i}.000Z,${testUserId},session_${i},ACTION_${i}`
-      );
-      const largeCsv = [headers, ...rows].join('\n');
-
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue(largeCsv);
-
-      const startTime = performance.now();
-      const logs = getUserLogs(testUserId);
-      const endTime = performance.now();
-
-      expect(logs).toHaveLength(10000);
-      expect(endTime - startTime).toBeLessThan(2000); // Should complete in less than 2 seconds
-    });
-  });
-});
+    test('exposes resolved aggregated CSV file path', () => {
+      expect(getAggregatedCSVFilePath()).toBe(csvFile)
+    })
+  })
+})

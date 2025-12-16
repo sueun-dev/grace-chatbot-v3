@@ -3,7 +3,7 @@ module.exports = {
     name: 'grace-chatbot',
     script: 'npm',
     args: 'start',
-    cwd: '/home/grace-chatbot-v2',
+    cwd: __dirname,
     instances: 1,
     autorestart: true,
     watch: false,

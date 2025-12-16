@@ -265,7 +265,7 @@ export default function DownloadPage() {
           {/* Current CSV */}
           <div className="border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-700 mb-3">
-              Download Current Session CSV
+              Download Current Session CSV (Raw Data)
             </h2>
             <p className="text-sm text-gray-600 mb-4">
               Download the CSV file containing all user interactions from the

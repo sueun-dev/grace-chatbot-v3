@@ -51,9 +51,12 @@ export default function Home() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const code = formData.get("codeVerification");
-    
+
     // Store user identifier (the code they entered)
     sessionStorage.setItem('userIdentifier', code);
+    if (!sessionStorage.getItem('dwellStart')) {
+      sessionStorage.setItem('dwellStart', new Date().toISOString());
+    }
     
     // Log code entry
     await logAction({

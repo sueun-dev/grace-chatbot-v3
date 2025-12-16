@@ -46,16 +46,6 @@ export const useScenarioSimulationEnhanced = () => {
       });
 
       const evaluation = await response.json();
-      
-      // Log evaluation to CSV
-      await logAction({
-        actionType: ACTION_TYPES.SIMULATION_OPTION_SELECTED,
-        actionDetails: `Scenario evaluation: ${evaluation.isAppropriate ? 'Appropriate' : 'Inappropriate'}`,
-        response: userResponse,
-        score: evaluation.score,
-        scenarioType: scenario.type,
-        optionSelected: evaluation.isAppropriate ? 'appropriate' : 'inappropriate'
-      });
 
       return evaluation;
     } catch (error) {
@@ -157,6 +147,20 @@ export const useScenarioSimulationEnhanced = () => {
 
     // Evaluate the response
     const evaluation = await evaluateResponse(userInput, currentScenario);
+
+    // Log raw simulation input + evaluation for CSV (one event per attempt)
+    await logAction({
+      actionType: ACTION_TYPES.SIMULATION_INPUT,
+      actionDetails: `Scenario response evaluated: ${evaluation.isAppropriate ? 'appropriate' : 'inappropriate'}`,
+      scenarioType: currentScenario.type,
+      scenarioIndex: simulationState.currentScenarioIndex,
+      retryCount: simulationState.retryCount,
+      response: userInput,
+      evaluationReason: evaluation.reason,
+      evaluationSuggestions: evaluation.suggestions,
+      score: evaluation.score,
+      isAppropriate: evaluation.isAppropriate
+    });
     
     // Add evaluation to history
     const newEvaluationHistory = [...simulationState.evaluationHistory, {
@@ -288,6 +292,13 @@ export const useScenarioSimulationEnhanced = () => {
 
   // Complete simulation and generate comprehensive CSV
   const completeSimulation = async (setMessages, allResponses) => {
+    // Generate deterministic completion code once (must match what's shown to the user)
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let completionCode = '';
+    for (let i = 0; i < 6; i++) {
+      completionCode += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+
     // Generate summary
     const appropriateCount = allResponses.filter(r => r.isAppropriate).length;
     const totalResponses = allResponses.length;
@@ -338,13 +349,6 @@ To wrap things up:
 
         // 4. Completion code
         setTimeout(() => {
-          // Generate random 6-character alphanumeric code
-          const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-          let completionCode = '';
-          for (let i = 0; i < 6; i++) {
-            completionCode += characters.charAt(Math.floor(Math.random() * characters.length));
-          }
-
           const codeMsg = {
             id: Date.now() + 3,
             type: "completion-code",
@@ -357,21 +361,21 @@ To wrap things up:
       }, 2000);
     }, 1500);
 
-    // Log completion with all data
+    // Log completion with all data, including dwell time if available
+    const dwellStart = typeof window !== "undefined" ? sessionStorage.getItem('dwellStart') : null;
+    const dwellTimeMs = dwellStart ? Date.now() - new Date(dwellStart).getTime() : null;
+
     await logAction({
       actionType: ACTION_TYPES.SIMULATION_COMPLETED,
-      actionDetails: JSON.stringify({
-        summary: {
-          totalScenarios: simulationState.scenarios.length,
-          totalResponses: totalResponses,
-          appropriateResponses: appropriateCount,
-          inappropriateResponses: totalResponses - appropriateCount,
-          averageScore: Math.round(averageScore),
-          detailedResponses: allResponses
-        },
-        allResponses: allResponses
-      }),
-      score: averageScore
+      actionDetails: 'Simulation completed',
+      completionCode,
+      totalScenarios: simulationState.scenarios.length,
+      totalResponses: totalResponses,
+      appropriateResponses: appropriateCount,
+      inappropriateResponses: totalResponses - appropriateCount,
+      averageScore: Math.round(averageScore),
+      dwellTimeMs: dwellTimeMs !== null ? dwellTimeMs : undefined,
+      dwellTimeSeconds: dwellTimeMs !== null ? Math.round(dwellTimeMs / 1000) : undefined
     });
 
     // Reset simulation state - mark as completely done

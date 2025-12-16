@@ -31,8 +31,7 @@ export const QUESTIONNAIRE_SCHEMA = {
         },
       ],
       nextQuestion: {
-        continue: "alcohol_experience",
-        end: "assessment_end",
+        continue: "alcohol_experience"
       },
     },
     {

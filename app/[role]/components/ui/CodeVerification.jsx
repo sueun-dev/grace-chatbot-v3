@@ -14,7 +14,7 @@ const CodeVerification = ({ handleFormSubmit }) => {
         <input
           type="text"
           name="codeVerification"
-          id="codeVerification "
+          id="codeVerification"
           placeholder="Enter 6-character code"
           className="border-2 border-gray-300 rounded-md p-4"
         />

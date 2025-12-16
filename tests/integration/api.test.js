@@ -3,12 +3,27 @@
  * Tests the complete flow of API endpoints including request/response handling
  */
 
+jest.mock('next/server', () => ({
+  NextResponse: {
+    json: (body, init = {}) => ({
+      status: init.status || 200,
+      json: async () => body,
+      headers: {
+        get: (key) => {
+          const headers = init.headers || {}
+          return headers[key] || headers[key?.toLowerCase?.()] || null
+        }
+      }
+    })
+  },
+  NextRequest: class {}
+}))
+
 import { POST } from '@/app/api/chat/route'
 import { POST as evaluatePost } from '@/app/api/evaluate-response/route'
 import { POST as logPost } from '@/app/api/log-action/route'
 import { POST as authPost } from '@/app/api/admin-auth/route'
 import { GET as downloadGet } from '@/app/api/download-csv/route'
-import { NextRequest } from 'next/server'
 
 // Mock OpenAI API
 global.fetch = jest.fn()
@@ -18,13 +33,23 @@ jest.mock('fs', () => ({
   existsSync: jest.fn(() => true),
   mkdirSync: jest.fn(),
   writeFileSync: jest.fn(),
-  appendFileSync: jest.fn(),
-  readFileSync: jest.fn(() => 'timestamp,user_identifier,session_id\n2024-01-01,USER001,session123'),
+  renameSync: jest.fn(),
+  readFileSync: jest.fn(() => 'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code\n'),
 }))
+
+const createRequest = ({ url = 'http://localhost:3001', body, headers = {}, method = 'GET' } = {}) => ({
+  url,
+  method,
+  headers: {
+    get: (key) => headers[key.toLowerCase()] ?? headers[key],
+  },
+  json: async () => (typeof body === 'string' ? JSON.parse(body) : body),
+  text: async () => (typeof body === 'string' ? body : JSON.stringify(body ?? {}))
+})
 
 describe('API Integration Tests', () => {
   beforeEach(() => {
-    global.fetch.mockClear()
+    global.fetch.mockReset()
   })
 
   describe('/api/chat', () => {
@@ -42,12 +67,13 @@ describe('API Integration Tests', () => {
         json: async () => mockResponse
       })
 
-      const request = new NextRequest('http://localhost:3001/api/chat', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/chat',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           messages: [{ role: 'user', content: 'Hello' }],
           systemPrompt: 'You are a helpful assistant'
-        })
+        }
       })
 
       const response = await POST(request)
@@ -72,11 +98,12 @@ describe('API Integration Tests', () => {
     test('should handle OpenAI API errors', async () => {
       global.fetch.mockRejectedValueOnce(new Error('OpenAI API error'))
 
-      const request = new NextRequest('http://localhost:3001/api/chat', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/chat',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           messages: [{ role: 'user', content: 'Hello' }]
-        })
+        }
       })
 
       const response = await POST(request)
@@ -109,13 +136,14 @@ describe('API Integration Tests', () => {
         json: async () => mockEvaluation
       })
 
-      const request = new NextRequest('http://localhost:3001/api/evaluate-response', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/evaluate-response',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           userResponse: 'No thanks, I am the designated driver',
           scenario: 'Someone offers you a drink at a party',
           context: 'Peer pressure situation'
-        })
+        }
       })
 
       const response = await evaluatePost(request)
@@ -151,13 +179,14 @@ describe('API Integration Tests', () => {
         json: async () => mockEvaluation
       })
 
-      const request = new NextRequest('http://localhost:3001/api/evaluate-response', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/evaluate-response',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           userResponse: 'Sure, why not!',
           scenario: 'Someone offers you drugs',
           context: 'High-risk situation'
-        })
+        }
       })
 
       const response = await evaluatePost(request)
@@ -176,15 +205,16 @@ describe('API Integration Tests', () => {
 
   describe('/api/log-action', () => {
     test('should log user action successfully', async () => {
-      const request = new NextRequest('http://localhost:3001/api/log-action', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/log-action',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           userIdentifier: 'USER001',
           sessionId: 'session123',
           actionType: 'QUESTIONNAIRE_STARTED',
           actionDetails: 'Started questionnaire',
           chatbotType: 'general-ai'
-        })
+        }
       })
 
       const response = await logPost(request)
@@ -197,30 +227,32 @@ describe('API Integration Tests', () => {
       })
     })
 
-    test('should handle missing data gracefully', async () => {
-      const request = new NextRequest('http://localhost:3001/api/log-action', {
+    test('should reject missing actionType', async () => {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/log-action',
         method: 'POST',
-        body: JSON.stringify({
-          actionType: 'OPTION_SELECTED'
-        })
+        body: {
+          userIdentifier: 'USER999'
+        }
       })
 
       const response = await logPost(request)
       const data = await response.json()
 
-      expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
+      expect(response.status).toBe(400)
+      expect(data.error).toContain('actionType')
     })
   })
 
   describe('/api/admin-auth', () => {
     test('should authenticate with correct credentials', async () => {
-      const request = new NextRequest('http://localhost:3001/api/admin-auth', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/admin-auth',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           username: 'admin',
           password: 'grace2024!@#'
-        })
+        }
       })
 
       const response = await authPost(request)
@@ -234,12 +266,13 @@ describe('API Integration Tests', () => {
     })
 
     test('should reject invalid credentials', async () => {
-      const request = new NextRequest('http://localhost:3001/api/admin-auth', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/admin-auth',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           username: 'wrong',
           password: 'incorrect'
-        })
+        }
       })
 
       const response = await authPost(request)
@@ -255,10 +288,11 @@ describe('API Integration Tests', () => {
 
   describe('/api/download-csv', () => {
     test('should download CSV with proper authorization', async () => {
-      const request = new NextRequest('http://localhost:3001/api/download-csv', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/download-csv',
         method: 'GET',
         headers: {
-          'authorization': 'Bearer admin'
+          authorization: 'Bearer admin'
         }
       })
 
@@ -270,7 +304,8 @@ describe('API Integration Tests', () => {
     })
 
     test('should reject unauthorized requests', async () => {
-      const request = new NextRequest('http://localhost:3001/api/download-csv', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/download-csv',
         method: 'GET',
         headers: {}
       })
@@ -307,11 +342,12 @@ describe('API Integration Tests', () => {
         )
       )
 
-      const request = new NextRequest('http://localhost:3001/api/chat', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/chat',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           messages: [{ role: 'user', content: 'Hello' }]
-        })
+        }
       })
 
       const response = await POST(request)
@@ -321,16 +357,17 @@ describe('API Integration Tests', () => {
   })
 
   describe('CSV Logging Integration', () => {
-    test('should create CSV file if not exists', async () => {
+    test('creates aggregated CSV when storage is missing', async () => {
       const fs = require('fs')
-      fs.existsSync.mockReturnValueOnce(false)
+      fs.existsSync.mockImplementation(() => false)
 
-      const request = new NextRequest('http://localhost:3001/api/log-action', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/log-action',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           userIdentifier: 'USER001',
           actionType: 'FIRST_ACTION'
-        })
+        }
       })
 
       await logPost(request)
@@ -338,21 +375,27 @@ describe('API Integration Tests', () => {
       expect(fs.writeFileSync).toHaveBeenCalled()
     })
 
-    test('should append to existing CSV', async () => {
+    test('updates existing matrix for repeated user actions', async () => {
       const fs = require('fs')
-      fs.existsSync.mockReturnValue(true)
+      fs.readFileSync.mockReturnValue([
+        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_action_type',
+        'USER002,USER002,general-ai,,5,1,,INIT'
+      ].join('\n'))
 
-      const request = new NextRequest('http://localhost:3001/api/log-action', {
+      const request = createRequest({
+        url: 'http://localhost:3001/api/log-action',
         method: 'POST',
-        body: JSON.stringify({
+        body: {
           userIdentifier: 'USER002',
           actionType: 'SUBSEQUENT_ACTION'
-        })
+        }
       })
 
       await logPost(request)
 
-      expect(fs.appendFileSync).toHaveBeenCalled()
+      const output = fs.writeFileSync.mock.calls.pop()[1]
+      expect(output).toContain('action_2_action_type')
+      expect(output).toContain('SUBSEQUENT_ACTION')
     })
   })
 })
