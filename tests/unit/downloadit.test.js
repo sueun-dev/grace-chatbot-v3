@@ -217,26 +217,40 @@ describe('DownloadPage Component Tests', () => {
         blob: async () => mockBlob
       });
 
-      const downloadButton = screen.getByRole('button', { name: 'Download Current CSV' });
-      fireEvent.click(downloadButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Download complete!')).toBeInTheDocument();
-      });
-
-      expect(global.fetch).toHaveBeenCalledWith('/api/download-csv', {
-        method: 'GET',
-        headers: {
-          'Authorization': 'Bearer admin'
+      const createdAnchors = [];
+      const originalCreateElement = document.createElement.bind(document);
+      const createElementSpy = jest.spyOn(document, 'createElement').mockImplementation((tagName) => {
+        const element = originalCreateElement(tagName);
+        if (tagName === 'a') {
+          createdAnchors.push(element);
+          element.click = jest.fn();
         }
+        return element;
       });
 
-      expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
-      expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+      try {
+        const downloadButton = screen.getByRole('button', { name: 'Download Current CSV' });
+        fireEvent.click(downloadButton);
 
-      // Check that download link was created and clicked
-      const downloadLink = document.createElement('a');
-      expect(downloadLink.download).toMatch(/all_user_interactions_.*\.csv/);
+        await waitFor(() => {
+          expect(screen.getByText('Download complete!')).toBeInTheDocument();
+        });
+
+        expect(global.fetch).toHaveBeenCalledWith('/api/download-csv', {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer admin'
+          }
+        });
+
+        expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
+        expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+
+        expect(createdAnchors.length).toBeGreaterThan(0);
+        expect(createdAnchors[0].download).toMatch(/all_user_interactions_.*\.csv/);
+      } finally {
+        createElementSpy.mockRestore();
+      }
     });
 
     test('should handle CSV download failure', async () => {
@@ -391,7 +405,7 @@ describe('DownloadPage Component Tests', () => {
       fireEvent.click(loginButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Download Current Session CSV')).toBeInTheDocument();
+        expect(screen.getByText('Download Current Session CSV (Raw Data)')).toBeInTheDocument();
       });
 
       expect(screen.getByText('Download All CSV Files')).toBeInTheDocument();

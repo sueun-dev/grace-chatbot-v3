@@ -2,42 +2,25 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
+import { getAggregatedCSVFilePath } from '@/utils/csvLogger';
 
 export async function GET(request) {
+  let tempZipPath = '';
   try {
-    // Check authorization
-    const authorization = request.headers.get('authorization');
-    if (authorization !== 'Bearer admin') {
+    const DOWNLOAD_TOKEN = process.env.DOWNLOAD_TOKEN || 'admin';
+    // Check authorization (header or ?token=)
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get('token');
+    const authHeader = request.headers.get('authorization');
+    const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const authorized = bearer === DOWNLOAD_TOKEN || token === DOWNLOAD_TOKEN;
+    if (!authorized) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Create a write stream for the ZIP file
-    const zipFileName = `all_csv_files_${new Date().toISOString().split('T')[0]}.zip`;
-    const tempZipPath = path.join(process.cwd(), 'temp', zipFileName);
-    
-    // Ensure temp directory exists
-    const tempDir = path.join(process.cwd(), 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-    
-    // Create zip archive
-    const output = fs.createWriteStream(tempZipPath);
-    const archive = archiver('zip', {
-      zlib: { level: 9 } // Maximum compression
-    });
-    
-    // Create a promise to handle the archive process
-    const archivePromise = new Promise((resolve, reject) => {
-      output.on('close', () => resolve());
-      archive.on('error', (err) => reject(err));
-    });
-    
-    archive.pipe(output);
-    
     // Add CSV files from all three chatbots
     const chatbots = [
       { name: 'general-ai', label: 'General_AI' },
@@ -45,50 +28,63 @@ export async function GET(request) {
       { name: 'friend-ai', label: 'Friend_AI' }
     ];
 
+    const filesToAdd = [];
+    const addAggregatedFile = (filePath, archiveName) => {
+      if (fs.existsSync(filePath)) {
+        filesToAdd.push({ filePath, archiveName });
+      }
+    };
+
     for (const chatbot of chatbots) {
-      // Path to each chatbot's user logs directory
-      const userLogsPath = path.join(
+      const csvPath = path.join(
         process.cwd(),
         '..',
         chatbot.name,
-        'user_logs'
+        'user_logs',
+        'user_actions.csv'
       );
-
-      if (fs.existsSync(userLogsPath)) {
-        // Get all user CSV files in this chatbot's directory
-        const userFiles = fs.readdirSync(userLogsPath).filter(file =>
-          file.startsWith('user_') && file.endsWith('.csv')
-        );
-
-        // Create a folder in the archive for this chatbot
-        if (userFiles.length > 0) {
-          userFiles.forEach(file => {
-            const csvPath = path.join(userLogsPath, file);
-            // Add file to archive with chatbot folder structure
-            archive.file(csvPath, {
-              name: `${chatbot.label}/${file}`
-            });
-          });
-        }
-      }
+      addAggregatedFile(csvPath, `${chatbot.label}/user_actions.csv`);
     }
 
-    // Add current chatbot's user CSV files as well
-    const currentUserLogsPath = path.join(process.cwd(), 'user_logs');
-    if (fs.existsSync(currentUserLogsPath)) {
-      const currentUserFiles = fs.readdirSync(currentUserLogsPath).filter(file =>
-        file.startsWith('user_') && file.endsWith('.csv')
-      );
+    const currentCsvPath = getAggregatedCSVFilePath();
+    addAggregatedFile(currentCsvPath, 'Current_General_AI/user_actions.csv');
 
-      if (currentUserFiles.length > 0) {
-        currentUserFiles.forEach(file => {
-          const csvPath = path.join(currentUserLogsPath, file);
-          archive.file(csvPath, {
-            name: `Current_General_AI/${file}`
-          });
-        });
-      }
+    if (filesToAdd.length === 0) {
+      return NextResponse.json(
+        { error: 'No CSV files found across chatbots' },
+        { status: 404 }
+      );
     }
+
+    // Create a write stream for the ZIP file
+    const zipFileName = `all_csv_files_${new Date().toISOString().split('T')[0]}.zip`;
+
+    // Ensure temp directory exists
+    const tempDir = path.join(process.cwd(), 'temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    tempZipPath = path.join(tempDir, zipFileName);
+
+    // Create zip archive
+    const output = fs.createWriteStream(tempZipPath);
+    const archive = archiver('zip', {
+      zlib: { level: 9 } // Maximum compression
+    });
+
+    // Create a promise to handle the archive process
+    const archivePromise = new Promise((resolve, reject) => {
+      output.on('close', () => resolve());
+      output.on('error', (err) => reject(err));
+      archive.on('error', (err) => reject(err));
+    });
+
+    archive.pipe(output);
+
+    filesToAdd.forEach(({ filePath, archiveName }) => {
+      archive.file(filePath, { name: archiveName });
+    });
     
     // Finalize the archive
     await archive.finalize();
@@ -111,6 +107,11 @@ export async function GET(request) {
     
   } catch (error) {
     console.error('ZIP download error:', error);
+    if (tempZipPath && fs.existsSync(tempZipPath)) {
+      try {
+        fs.unlinkSync(tempZipPath);
+      } catch {}
+    }
     return NextResponse.json(
       { error: 'Failed to download ZIP file' },
       { status: 500 }

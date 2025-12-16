@@ -30,6 +30,7 @@ describe('useScenarioSimulationEnhanced Hook Tests', () => {
         evaluationHistory: [],
         waitingForInput: false,
         allResponses: [],
+        isCompletelyDone: false
       })
     })
 

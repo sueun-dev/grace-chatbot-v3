@@ -20,20 +20,24 @@ export const useChat = () => {
   };
 
   const handleSendMessage = async (userMessage, handleUserInput = null) => {
+    // Check if scenario simulation is waiting for input
+    if (handleUserInput) {
+      try {
+        const simulationHandled = await handleUserInput(userMessage, setMessages);
+        if (simulationHandled) {
+          return;
+        }
+      } catch (error) {
+        console.error('Simulation input handler failed:', error);
+      }
+    }
+
     // Log message sent
     await logAction({
       actionType: ACTION_TYPES.MESSAGE_SENT,
       actionDetails: 'User sent message',
       messageContent: userMessage
     });
-    
-    // Check if scenario simulation is waiting for input
-    if (handleUserInput) {
-      const simulationHandled = handleUserInput(userMessage, setMessages);
-      if (simulationHandled) {
-        return;
-      }
-    }
 
     // Don't allow new messages if there's a pending interactive message
     if (pendingInteractiveMessage) {

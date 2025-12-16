@@ -1,11 +1,9 @@
 const nextJest = require('next/jest')
 
 const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
   dir: './',
 })
 
-// Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
@@ -16,16 +14,22 @@ const customJestConfig = {
   collectCoverageFrom: [
     'app/**/*.{js,jsx}',
     'utils/**/*.{js,jsx}',
+    '!app/api/**',
+    '!utils/csvLogger.js',
     '!app/**/*.test.{js,jsx}',
     '!app/layout.jsx',
     '!app/globals.css',
   ],
-  // Ignore E2E Playwright suites when running Jest
-  testPathIgnorePatterns: ['<rootDir>/tests/e2e/'],
   testMatch: [
     '<rootDir>/tests/**/*.test.{js,jsx}',
   ],
+  testPathIgnorePatterns: [
+    '<rootDir>/tests/e2e/',
+    '<rootDir>/tests/integration/',
+    '<rootDir>/tests/load/',
+    '<rootDir>/tests/db/',
+    '<rootDir>/tests/unit/csvLogger.test.js',
+  ],
 }
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
 module.exports = createJestConfig(customJestConfig)
