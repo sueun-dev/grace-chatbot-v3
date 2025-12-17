@@ -118,7 +118,7 @@ CSV 저장 경로(선택):
 - `npm run dev`
 
 접속:
-- `http://136.112.181.237:3001`
+- `http://34.58.193.31:3001`
 
 CSV(DB) 파일은 자동 생성됩니다:
 - `user_logs/user_actions.csv`
@@ -161,7 +161,7 @@ CSV(DB) 파일은 자동 생성됩니다:
 ```
 server {
   listen 80;
-  server_name 136.112.181.237;
+  server_name 34.58.193.31;
 
   location / {
     proxy_pass http://127.0.0.1:3001;
@@ -180,8 +180,8 @@ server {
 - `sudo systemctl reload nginx`
 
 이제:
-- `http://136.112.181.237/` → Next 앱(프론트)
-- `http://136.112.181.237/api/log-action` → 백엔드 API
+- `http://34.58.193.31/` → Next 앱(프론트)
+- `http://34.58.193.31/api/log-action` → 백엔드 API
 
 ---
 
@@ -201,17 +201,17 @@ server {
 
 ## 12) 관리자 다운로드(/downloadit) & API 다운로드
 ### 관리자 페이지
-- (Nginx 사용 시) `http://136.112.181.237/downloadit`
-- (3001 직접 오픈 시) `http://136.112.181.237:3001/downloadit`
+- (Nginx 사용 시) `http://34.58.193.31/downloadit`
+- (3001 직접 오픈 시) `http://34.58.193.31:3001/downloadit`
 - 페이지 내부 로그인은 `/api/admin-auth`를 호출합니다. (현재 서버 코드에 기본 계정이 하드코딩되어 있음)
 
 ### API로 CSV 다운로드(토큰 필요)
 `.env`의 `DOWNLOAD_TOKEN` 기준으로 인증됩니다.
 - 전체 CSV:
-  - `curl -H "Authorization: Bearer <DOWNLOAD_TOKEN>" "http://136.112.181.237:3001/api/download-csv"`
+  - `curl -H "Authorization: Bearer <DOWNLOAD_TOKEN>" "http://34.58.193.31:3001/api/download-csv"`
   - 또는 `?token=<DOWNLOAD_TOKEN>`
 - 단일 유저 1행:
-  - `curl "http://136.112.181.237:3001/api/download-csv?token=<DOWNLOAD_TOKEN>&userId=USER001"`
+  - `curl "http://34.58.193.31:3001/api/download-csv?token=<DOWNLOAD_TOKEN>&userId=USER001"`
 
 ---
 
@@ -229,3 +229,6 @@ server {
 - OpenAI 실패: `.env`의 `OPENAI_API_KEY` 확인(서버 재시작 필요)
 - CSV 저장 실패: 디스크 권한/용량 확인, `CSV_LOCK_RETRIES`, `CSV_LOCK_STALE_MS` 조정
 - 외부 접속 불가: GCP 방화벽 규칙(80/443 또는 3001) 확인
+
+
+
