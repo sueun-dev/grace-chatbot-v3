@@ -1,0 +1,231 @@
+# grace-chatbot-v3 GCP 셋업/실행 가이드 (Compute Engine + PM2)
+이 프로젝트는 **Next.js 단일 서버**로 프론트(UI) + 백엔드(API: `app/api/**`)가 함께 동작합니다.  
+DB는 별도 서버가 아니라 **CSV 파일 저장(`user_logs/user_actions.csv`)** 입니다.  
+즉 “프론트/백/DB(CSV) 모두 켜기” = **Node(Next) 서버 1개 실행 + CSV 저장 경로 쓰기 권한 확보** 입니다.
+
+---
+
+## 0) GCP 준비 (Compute Engine)
+1. GCP 콘솔 → Compute Engine → VM 인스턴스 만들기
+2. OS: Ubuntu 22.04 LTS 권장
+3. 네트워크/방화벽
+   - (권장) 80/443 오픈 후 Nginx로 3001 프록시
+   - (간단) 3001 포트를 외부에 직접 오픈
+
+### 방화벽 규칙 예시
+- 간단(직접 3001): TCP 3001 허용
+- 권장(Nginx): TCP 80, 443 허용
+
+### GCP 방화벽(중요): 외부에서 안 열리면 여기부터
+GCP는 보통 2겹입니다: **VPC 방화벽 규칙 + VM(ufw) 방화벽**.
+
+#### 1) VPC 방화벽 규칙 생성(콘솔)
+VPC network → Firewall → Create firewall rule:
+- Direction: Ingress
+- Action: Allow
+- Targets: **Specified target tags** (예: `grace-chatbot`)
+- Source IPv4 ranges: `0.0.0.0/0` (또는 본인 IP만)
+- Protocols and ports:
+  - (직접 3001 오픈) `tcp:3001`
+  - (Nginx 사용) `tcp:80,tcp:443`
+그 다음 Compute Engine → VM → Edit → Network tags에 `grace-chatbot` 태그 추가.
+
+#### 2) VPC 방화벽 규칙 생성(gcloud)
+직접 3001 오픈:
+- `gcloud compute firewall-rules create grace-chatbot-allow-3001 --direction=INGRESS --action=ALLOW --rules=tcp:3001 --source-ranges=0.0.0.0/0 --target-tags=grace-chatbot`
+Nginx(80/443) 오픈:
+- `gcloud compute firewall-rules create grace-chatbot-allow-http --direction=INGRESS --action=ALLOW --rules=tcp:80 --source-ranges=0.0.0.0/0 --target-tags=grace-chatbot`
+- `gcloud compute firewall-rules create grace-chatbot-allow-https --direction=INGRESS --action=ALLOW --rules=tcp:443 --source-ranges=0.0.0.0/0 --target-tags=grace-chatbot`
+VM에 태그 추가:
+- `gcloud compute instances add-tags <INSTANCE_NAME> --zone <ZONE> --tags=grace-chatbot`
+
+#### 3) VM 내부(ufw)도 체크(Ubuntu)
+- `sudo ufw status`
+- (필요 시) `sudo ufw allow 3001/tcp` 또는 `sudo ufw allow 80/tcp && sudo ufw allow 443/tcp`
+
+#### 4) 빠른 진단(VM에서)
+VM 내부에서 OK / 외부에서 FAIL이면 99% 방화벽 문제입니다.
+- 내부 확인: `curl -I http://127.0.0.1:3001/`
+- 리슨 확인: `sudo ss -lntp | rg ':3001'`
+
+---
+
+## 1) VM 접속
+GCP 콘솔 SSH 또는 로컬에서:
+- `gcloud compute ssh <INSTANCE_NAME> --zone <ZONE>`
+
+---
+
+## 2) 필수 패키지 설치
+Ubuntu 기준:
+- `sudo apt update`
+- `sudo apt install -y git curl ca-certificates build-essential`
+
+---
+
+## 3) Node.js 설치 (권장: Node 20 LTS)
+아래 둘 중 하나 선택:
+
+### (A) NodeSource (간단)
+- `curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -`
+- `sudo apt install -y nodejs`
+- `node -v && npm -v`
+
+### (B) nvm 사용
+- `curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash`
+- 터미널 재접속 후:
+  - `nvm install 20`
+  - `nvm use 20`
+  - `node -v && npm -v`
+
+---
+
+## 4) Git clone (요청하신 시작점)
+- `git clone https://github.com/sueun-dev/grace-chatbot-v3.git`
+- `cd grace-chatbot-v3`
+
+---
+
+## 5) 의존성 설치
+`package-lock.json`이 있으므로 운영은 `npm ci` 권장:
+- `npm ci`
+
+(개발환경에서만) `npm install`도 가능.
+
+---
+
+## 6) 환경변수(.env) 설정 (필수)
+이 프로젝트는 `.env.local`이 아니라 **레포 루트의 `.env`**를 사용합니다.
+
+- `cp .env.example .env`
+- `nano .env` (또는 편한 에디터)
+
+최소 설정:
+- `OPENAI_API_KEY=...`  (필수: `/api/chat`, `/api/evaluate-response`)
+- `OPENAI_DEFAULT_MODEL=gpt-4o-mini-2024-07-18` (선택)
+- `DOWNLOAD_TOKEN=랜덤_긴_문자열` (권장: 다운로드 API 보호)
+
+CSV 저장 경로(선택):
+- 기본 저장: `user_logs/user_actions.csv`
+- 변경 시:
+  - `CSV_LOG_DIR=/var/lib/grace-chatbot/user_logs` 또는
+  - `CSV_LOG_FILE=/var/lib/grace-chatbot/user_actions.csv`
+
+---
+
+## 7) (개발용) 프론트+백엔드+CSV(DB) 실행
+하나의 명령으로 전부 실행됩니다:
+- `npm run dev`
+
+접속:
+- `http://136.112.181.237:3001`
+
+CSV(DB) 파일은 자동 생성됩니다:
+- `user_logs/user_actions.csv`
+
+---
+
+## 8) (운영 권장) 빌드 + PM2로 상시 실행
+### 8-1) 빌드
+- `npm run build`
+
+### 8-2) PM2 설치
+- `sudo npm i -g pm2`
+
+### 8-3) 런타임 디렉토리 준비(권장)
+- `mkdir -p logs user_logs temp`
+
+### 8-4) PM2로 실행 (레포에 `ecosystem.config.js` 포함)
+- `pm2 start ecosystem.config.js`
+- 상태/로그 확인:
+  - `pm2 status`
+  - `pm2 logs grace-chatbot`
+
+### 8-5) 재부팅 후 자동 시작(선택)
+- `pm2 save`
+- `pm2 startup systemd` 출력되는 명령을 그대로 실행
+
+기본 포트는 `ecosystem.config.js`에서 `PORT=3001`로 설정되어 있습니다.
+
+---
+
+## 9) (권장) Nginx 리버스 프록시로 80/443 서비스
+### 9-1) Nginx 설치
+- `sudo apt install -y nginx`
+
+### 9-2) 서버 블록 설정 예시
+파일 생성:
+- `sudo nano /etc/nginx/sites-available/grace-chatbot`
+
+예시(도메인 없으면 `server_name _;`로 두고 IP로 접속 가능):
+```
+server {
+  listen 80;
+  server_name 136.112.181.237;
+
+  location / {
+    proxy_pass http://127.0.0.1:3001;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+활성화:
+- `sudo ln -s /etc/nginx/sites-available/grace-chatbot /etc/nginx/sites-enabled/grace-chatbot`
+- `sudo nginx -t`
+- `sudo systemctl reload nginx`
+
+이제:
+- `http://136.112.181.237/` → Next 앱(프론트)
+- `http://136.112.181.237/api/log-action` → 백엔드 API
+
+---
+
+## 10) (선택) HTTPS(무료) - Let’s Encrypt
+도메인이 있다면:
+- `sudo apt install -y certbot python3-certbot-nginx`
+- `sudo certbot --nginx -d your-domain.com`
+
+---
+
+## 11) CSV(DB) 운영 포인트
+- CSV는 파일 락(`proper-lockfile`) + temp write 후 rename(atomic)으로 동시성/무결성 대응합니다.
+- 기본 경로는 레포 내부 `user_logs/`이며, 운영에서는 **레포 외부 경로**(`/var/lib/...`)로 빼는 걸 권장합니다.
+- 백업이 필요하면 (예) 주기적으로 Cloud Storage로 업로드하는 cron을 별도로 구성하세요.
+
+---
+
+## 12) 관리자 다운로드(/downloadit) & API 다운로드
+### 관리자 페이지
+- (Nginx 사용 시) `http://136.112.181.237/downloadit`
+- (3001 직접 오픈 시) `http://136.112.181.237:3001/downloadit`
+- 페이지 내부 로그인은 `/api/admin-auth`를 호출합니다. (현재 서버 코드에 기본 계정이 하드코딩되어 있음)
+
+### API로 CSV 다운로드(토큰 필요)
+`.env`의 `DOWNLOAD_TOKEN` 기준으로 인증됩니다.
+- 전체 CSV:
+  - `curl -H "Authorization: Bearer <DOWNLOAD_TOKEN>" "http://136.112.181.237:3001/api/download-csv"`
+  - 또는 `?token=<DOWNLOAD_TOKEN>`
+- 단일 유저 1행:
+  - `curl "http://136.112.181.237:3001/api/download-csv?token=<DOWNLOAD_TOKEN>&userId=USER001"`
+
+---
+
+## 13) 업데이트 배포(코드 변경 반영)
+- `cd grace-chatbot-v3`
+- `git pull`
+- `npm ci`
+- `npm run build`
+- `pm2 restart grace-chatbot --update-env`
+
+---
+
+## 14) 트러블슈팅 체크리스트
+- 서버가 안 뜸: `pm2 logs grace-chatbot` / `logs/err.log` 확인
+- OpenAI 실패: `.env`의 `OPENAI_API_KEY` 확인(서버 재시작 필요)
+- CSV 저장 실패: 디스크 권한/용량 확인, `CSV_LOCK_RETRIES`, `CSV_LOCK_STALE_MS` 조정
+- 외부 접속 불가: GCP 방화벽 규칙(80/443 또는 3001) 확인

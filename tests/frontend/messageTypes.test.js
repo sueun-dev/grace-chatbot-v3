@@ -149,9 +149,9 @@ describe('Message components', () => {
   })
 
   describe('CompletionMessage', () => {
-    test('copies completion code and toggles button text', () => {
+    test('copies completion code and toggles button text', async () => {
       jest.useFakeTimers()
-      const writeText = jest.fn()
+      const writeText = jest.fn(() => Promise.resolve())
       Object.assign(navigator, { clipboard: { writeText } })
 
       const message = {
@@ -166,6 +166,9 @@ describe('Message components', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Copy Code' }))
       expect(writeText).toHaveBeenCalledWith('ABC123')
+
+      // handleCopy awaits clipboard writes; flush microtasks before asserting UI state
+      await act(async () => {})
       expect(screen.getByRole('button', { name: /copied/i })).toBeInTheDocument()
 
       act(() => {
@@ -191,4 +194,3 @@ describe('Message components', () => {
     })
   })
 })
-
