@@ -137,7 +137,7 @@ export const useQuestionnaire = () => {
       questionId: questionnaireState.currentQuestionId,
       response: option.text,
       optionSelected: option.value,
-      score: option.score || 0,
+      score: option.points ?? option.score ?? 0,
     });
 
     // Add user's selection as a message

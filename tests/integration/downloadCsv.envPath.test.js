@@ -65,8 +65,8 @@ describe('/api/download-csv uses CSV_LOG_FILE override', () => {
 
     const csvFile = path.join(outDir, `user_actions.${runId}.csv`)
     const content = [
-      'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code',
-      'u1,USER1,general-ai,,0,0,',
+      'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
+      'u1,USER1,general-ai,,,,0,0,',
       '',
     ].join('\n')
     fs.writeFileSync(csvFile, content)

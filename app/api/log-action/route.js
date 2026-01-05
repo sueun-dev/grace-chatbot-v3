@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { logUserAction } from '@/utils/csvLogger';
+import { enqueueLogAction } from '@/utils/logQueue';
 
 const MAX_BODY_BYTES = 80 * 1024; // 80KB per log request
 const FIELD_LIMITS = {
@@ -106,18 +106,18 @@ export async function POST(request) {
       );
     }
     
-    // Log the action to CSV
+    // Enqueue the action so CSV persistence doesn't block the request
     try {
-      await logUserAction(sanitized);
+      await enqueueLogAction(sanitized);
     } catch (err) {
-      console.error('CSV log write failed', { error: err?.message, stack: err?.stack });
+      console.error('Queue log write failed', { error: err?.message, stack: err?.stack });
       return NextResponse.json(
-        { error: 'Failed to persist log' },
+        { error: 'Failed to enqueue log' },
         { status: 500 }
       );
     }
     
-    return NextResponse.json({ success: true, message: 'Action logged successfully' });
+    return NextResponse.json({ success: true, message: 'Action queued successfully' });
   } catch (error) {
     console.error('Error logging action:', { error: error?.message, stack: error?.stack });
     return NextResponse.json(

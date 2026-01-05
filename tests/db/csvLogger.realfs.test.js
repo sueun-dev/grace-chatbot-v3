@@ -33,7 +33,7 @@ describe('csvLogger real filesystem round-trip', () => {
       delete process.env.CSV_LOG_DIR
       jest.resetModules()
 
-      const { logUserAction, getAggregatedCSVData, getUserLogs } = await import('@/utils/csvLogger')
+      const { logUserAction, getAggregatedCSVData, getUserLogs, getUserCsvFilePath } = await import('@/utils/csvLogger')
 
       await logUserAction({
         userIdentifier: 'USER001',
@@ -52,7 +52,7 @@ describe('csvLogger real filesystem round-trip', () => {
       expect(logs).toHaveLength(1)
       expect(logs[0].message_content).toBe(message)
 
-      const raw = fs.readFileSync(file, 'utf-8')
+      const raw = fs.readFileSync(getUserCsvFilePath('USER001'), 'utf-8')
       expect(raw).toContain('""CSV""')
     } finally {
       fs.rmSync(dir, { recursive: true, force: true })

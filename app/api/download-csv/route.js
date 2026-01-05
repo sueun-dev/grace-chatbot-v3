@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
-import { getAggregatedCSVData, getAggregatedCSVFilePath } from '@/utils/csvLogger';
+import { getAggregatedCSVData, getUserCsvFilePath } from '@/utils/csvLogger';
 
 const DOWNLOAD_TOKEN = process.env.DOWNLOAD_TOKEN || 'admin';
 
@@ -10,6 +10,15 @@ const escapeCsvValue = (value) => {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
+};
+
+const buildCsvContent = (headers, records) => {
+  const lines = [headers.map(escapeCsvValue).join(',')];
+  records.forEach((record) => {
+    const row = headers.map((header) => escapeCsvValue(record[header] ?? ''));
+    lines.push(row.join(','));
+  });
+  return lines.join('\n') + '\n';
 };
 
 export async function GET(request) {
@@ -30,18 +39,23 @@ export async function GET(request) {
     // Get specific user ID from query params if provided
     const userId = searchParams.get('userId');
 
-    // Ensure aggregated file exists
-    const csvFilePath = getAggregatedCSVFilePath();
-    if (!fs.existsSync(csvFilePath)) {
-      return NextResponse.json(
-        { error: 'No user logs found' },
-        { status: 404 }
-      );
-    }
-
     // If specific user requested return single-row CSV
     if (userId) {
       const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const userFilePath = getUserCsvFilePath(userId);
+      if (fs.existsSync(userFilePath)) {
+        const csvContent = fs.readFileSync(userFilePath, 'utf-8');
+        if (csvContent.trim()) {
+          return new Response(csvContent, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/csv',
+              'Content-Disposition': `attachment; filename="user_${safeUserId}_matrix_${new Date().toISOString().split('T')[0]}.csv"`,
+            },
+          });
+        }
+      }
+
       const { headers, records } = getAggregatedCSVData();
       const targetRow = records.find(record =>
         record.user_key === safeUserId || record.user_identifier === userId
@@ -54,12 +68,9 @@ export async function GET(request) {
         );
       }
 
-      const lines = [
-        headers.map(escapeCsvValue).join(','),
-        headers.map(header => escapeCsvValue(targetRow[header] ?? '')).join(',')
-      ].join('\n');
+      const csvContent = buildCsvContent(headers, [targetRow]);
 
-      return new Response(lines, {
+      return new Response(csvContent, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv',
@@ -69,7 +80,15 @@ export async function GET(request) {
     }
 
     // Default: stream the aggregated CSV covering all users
-    const csvContent = fs.readFileSync(csvFilePath, 'utf-8');
+    const { headers, records } = getAggregatedCSVData();
+    if (!records.length) {
+      return NextResponse.json(
+        { error: 'No user logs found' },
+        { status: 404 }
+      );
+    }
+
+    const csvContent = buildCsvContent(headers, records);
 
     return new Response(csvContent, {
       status: 200,

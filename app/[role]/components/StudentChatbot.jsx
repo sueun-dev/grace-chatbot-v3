@@ -190,18 +190,6 @@ const Sidebar = ({ showSidebar }) => {
           className="w-full h-full object-cover"
         />
       </div>
-      <div className="flex flex-col gap-[3px] max-w-[90%] mx-auto">
-        <span className="text-[#C59191] text-center font-bold text-[12px] tracking-[4px] leading-[130%]">
-          Get Started
-        </span>
-        <h1 className="text-[24px] text-[#023E6E] font-medium text-center leading-[120%] tracking-0">
-          Hi! Ready to boost your learning?
-        </h1>
-        <p className="text-[12px] font-medium text-[#023E6EB2] text-center leading-[150%] tracking-0">
-          Assists students with courses, homework, and quick answers to
-          educational queries.
-        </p>
-      </div>
     </div>
   );
 };

@@ -7,8 +7,8 @@ import Image from "next/image";
 /**
  * DownloadPage
  * - Admin login (client-side gate backed by /api/admin-auth)
- * - Download current CSV (/api/download-csv)
- * - Download all CSVs as ZIP (/api/download-all-csv)
+ * - Merge + download CSV (/api/download-csv)
+ * - Download individual CSVs as ZIP (/api/download-all-csv)
  * - Test-friendly: noValidate on form, session restore, deterministic messages
  */
 export default function DownloadPage() {
@@ -111,7 +111,7 @@ export default function DownloadPage() {
   const handleDownloadAllCSVs = async () => {
     if (isZipDownloading) return;
     setIsZipDownloading(true);
-    setDownloadStatus("Preparing all CSV files...");
+    setDownloadStatus("Preparing individual CSVs...");
 
     try {
       const response = await fetch("/api/download-all-csv", {
@@ -129,7 +129,7 @@ export default function DownloadPage() {
 
       const a = document.createElement("a");
       a.href = url;
-      const downloadFileName = `all_csv_files_${new Date()
+      const downloadFileName = `individual_csvs_${new Date()
         .toISOString()
         .split("T")[0]}.zip`;
 
@@ -141,7 +141,7 @@ export default function DownloadPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      setDownloadStatus("All files downloaded!");
+      setDownloadStatus("Individual CSVs downloaded!");
       setTimeout(() => setDownloadStatus(""), 3000);
     } catch (err) {
       console.error("Download error:", err);
@@ -262,14 +262,13 @@ export default function DownloadPage() {
         </h1>
 
         <div className="space-y-6">
-          {/* Current CSV */}
+          {/* Merge CSV */}
           <div className="border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-700 mb-3">
-              Download Current Session CSV (Raw Data)
+              Merge & Download CSV (All Users)
             </h2>
             <p className="text-sm text-gray-600 mb-4">
-              Download the CSV file containing all user interactions from the
-              current chatbot session.
+              Merge all per-user CSV files into a single CSV for this chatbot.
             </p>
             <button
               type="button"
@@ -278,27 +277,26 @@ export default function DownloadPage() {
               className="bg-blue-500 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
               {/* Keep label static to avoid duplicate "Preparing..." text nodes */}
-              Download Current CSV
+              Merge &amp; Download CSV
             </button>
           </div>
 
-          {/* All CSVs ZIP */}
+          {/* Individual CSVs ZIP */}
           <div className="border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-700 mb-3">
-              Download All CSV Files
+              Download Individual CSV Files
             </h2>
             <p className="text-sm text-gray-600 mb-4">
-              Download a ZIP file containing all CSV files from all chatbot
-              sessions (General AI, Doctor AI, Friend AI).
+              Download a ZIP containing each user's CSV file.
             </p>
             <button
               type="button"
               onClick={handleDownloadAllCSVs}
               disabled={isZipDownloading}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-6 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-50"
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2 px-6 rounded-lg font-medium hover:from-emerald-600 hover:to-teal-600 transition-colors disabled:opacity-50"
             >
               {/* Keep label static for the same reason as above */}
-              Download All CSV Files (ZIP)
+              Download Individual CSVs (ZIP)
             </button>
           </div>
 

@@ -229,7 +229,7 @@ describe('DownloadPage Component Tests', () => {
       });
 
       try {
-        const downloadButton = screen.getByRole('button', { name: 'Download Current CSV' });
+        const downloadButton = screen.getByRole('button', { name: 'Merge & Download CSV' });
         fireEvent.click(downloadButton);
 
         await waitFor(() => {
@@ -259,7 +259,7 @@ describe('DownloadPage Component Tests', () => {
       });
 
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const downloadButton = screen.getByRole('button', { name: 'Download Current CSV' });
+      const downloadButton = screen.getByRole('button', { name: 'Merge & Download CSV' });
       fireEvent.click(downloadButton);
 
       await waitFor(() => {
@@ -270,18 +270,18 @@ describe('DownloadPage Component Tests', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    test('should download all CSV files as ZIP successfully', async () => {
+    test('should download individual CSV files as ZIP successfully', async () => {
       const mockBlob = new Blob(['zip,data'], { type: 'application/zip' });
       global.fetch.mockResolvedValueOnce({
         ok: true,
         blob: async () => mockBlob
       });
 
-      const downloadButton = screen.getByRole('button', { name: 'Download All CSV Files (ZIP)' });
+      const downloadButton = screen.getByRole('button', { name: 'Download Individual CSVs (ZIP)' });
       fireEvent.click(downloadButton);
 
       await waitFor(() => {
-        expect(screen.getByText('All files downloaded!')).toBeInTheDocument();
+        expect(screen.getByText('Individual CSVs downloaded!')).toBeInTheDocument();
       });
 
       expect(global.fetch).toHaveBeenCalledWith('/api/download-all-csv', {
@@ -299,7 +299,7 @@ describe('DownloadPage Component Tests', () => {
       global.fetch.mockRejectedValueOnce(new Error('Network error'));
 
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const downloadButton = screen.getByRole('button', { name: 'Download All CSV Files (ZIP)' });
+      const downloadButton = screen.getByRole('button', { name: 'Download Individual CSVs (ZIP)' });
       fireEvent.click(downloadButton);
 
       await waitFor(() => {
@@ -317,7 +317,7 @@ describe('DownloadPage Component Tests', () => {
         blob: async () => mockBlob
       });
 
-      const downloadButton = screen.getByRole('button', { name: 'Download Current CSV' });
+      const downloadButton = screen.getByRole('button', { name: 'Merge & Download CSV' });
       fireEvent.click(downloadButton);
 
       expect(screen.getByText('Preparing download...')).toBeInTheDocument();
@@ -405,12 +405,12 @@ describe('DownloadPage Component Tests', () => {
       fireEvent.click(loginButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Download Current Session CSV (Raw Data)')).toBeInTheDocument();
+        expect(screen.getByText('Merge & Download CSV (All Users)')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Download All CSV Files')).toBeInTheDocument();
-      expect(screen.getByText(/Download the CSV file containing all user interactions/)).toBeInTheDocument();
-      expect(screen.getByText(/Download a ZIP file containing all CSV files/)).toBeInTheDocument();
+      expect(screen.getByText('Download Individual CSV Files')).toBeInTheDocument();
+      expect(screen.getByText(/Merge all per-user CSV files into a single CSV/)).toBeInTheDocument();
+      expect(screen.getByText(/Download a ZIP containing each user's CSV file/)).toBeInTheDocument();
     });
   });
 
@@ -475,7 +475,7 @@ describe('DownloadPage Component Tests', () => {
         blob: async () => mockBlob
       });
 
-      const downloadButton = screen.getByRole('button', { name: 'Download Current CSV' });
+      const downloadButton = screen.getByRole('button', { name: 'Merge & Download CSV' });
       fireEvent.click(downloadButton);
 
       await waitFor(() => {
@@ -521,8 +521,8 @@ describe('DownloadPage Component Tests', () => {
           blob: async () => mockBlob2
         });
 
-      const csvButton = screen.getByRole('button', { name: 'Download Current CSV' });
-      const zipButton = screen.getByRole('button', { name: 'Download All CSV Files (ZIP)' });
+      const csvButton = screen.getByRole('button', { name: 'Merge & Download CSV' });
+      const zipButton = screen.getByRole('button', { name: 'Download Individual CSVs (ZIP)' });
 
       fireEvent.click(csvButton);
       fireEvent.click(zipButton);

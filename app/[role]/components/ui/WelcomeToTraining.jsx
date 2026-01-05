@@ -3,7 +3,11 @@ import React from "react";
 import Button from "@/app/[role]/components/Button";
 import { ArrowLeft } from "lucide-react";
 
-const WelcomeToTraining = ({ handleGoBack, handleChatBotRedirect }) => {
+const WelcomeToTraining = ({
+  handleGoBack,
+  handleChatBotRedirect,
+  isRedirecting = false,
+}) => {
   return (
     <div className="h-screen w-full max-w-[700px] mx-auto pt-[100px] space-y-[20px]">
       <div>
@@ -17,11 +21,16 @@ const WelcomeToTraining = ({ handleGoBack, handleChatBotRedirect }) => {
           This training will help you learn more about alcohol, its effects, and
           how to make safer choices. Let's start with a few questions.
         </p>
-        <Button onClick={handleChatBotRedirect} className="w-full">
-          Continue
+        <Button
+          onClick={handleChatBotRedirect}
+          className="w-full"
+          disabled={isRedirecting}
+        >
+          {isRedirecting ? "Loading..." : "Continue"}
         </Button>
         <button
           onClick={handleGoBack}
+          disabled={isRedirecting}
           className="flex items-center gap-2 text-[#0364b3] hover:underline cursor-pointer"
         >
           <ArrowLeft className="w-[16px] h-[16px]" />

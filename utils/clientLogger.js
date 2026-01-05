@@ -16,18 +16,40 @@ export const logAction = async (actionData) => {
       sessionId,
       chatbotType: 'general-ai'
     };
-    
-    const response = await fetch('/api/log-action', {
+
+    const body = JSON.stringify(logData);
+
+    // Prefer sendBeacon when available (non-blocking, survives navigation).
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      try {
+        const blob = new Blob([body], { type: 'application/json' });
+        const queued = navigator.sendBeacon('/api/log-action', blob);
+        if (queued) return;
+      } catch {
+        // Fall back to fetch below
+      }
+    }
+
+    // Fire-and-forget fetch: never block UI on CSV persistence.
+    fetch('/api/log-action', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(logData),
-    });
-    
-    if (!response.ok) {
-      console.error('Failed to log action');
-    }
+      body,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          console.error('Failed to log action');
+        }
+      })
+      .catch((error) => {
+        console.error('Error logging action:', error);
+      });
+
+    // Yield once so immediate fetch failures/successes can surface in tests/console
+    // without awaiting potentially-slow network I/O.
+    await Promise.resolve();
   } catch (error) {
     console.error('Error logging action:', error);
   }
