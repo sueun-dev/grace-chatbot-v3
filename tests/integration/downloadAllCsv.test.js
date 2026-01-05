@@ -54,7 +54,7 @@ describe('/api/download-all-csv', () => {
       const data = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data).toEqual({ error: 'No CSV files found across chatbots' })
+      expect(data).toEqual({ error: 'No CSV files found' })
     } finally {
       existsSpy.mockRestore()
     }
@@ -69,8 +69,8 @@ describe('/api/download-all-csv', () => {
     fs.writeFileSync(
       csvFile,
       [
-        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code',
-        'u1,USER1,general-ai,,0,0,',
+        'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
+        'u1,USER1,general-ai,,,,0,0,',
         '',
       ].join('\n')
     )
@@ -97,7 +97,7 @@ describe('/api/download-all-csv', () => {
       expect(response.headers.get('content-disposition')).toContain('attachment')
 
       const dateString = new Date().toISOString().split('T')[0]
-      const tempZipPath = path.join(process.cwd(), 'temp', `all_csv_files_${dateString}.zip`)
+      const tempZipPath = path.join(process.cwd(), 'temp', `individual_csvs_${dateString}.zip`)
       expect(fs.existsSync(tempZipPath)).toBe(false)
     } finally {
       process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE

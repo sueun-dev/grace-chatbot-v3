@@ -7,11 +7,11 @@ jest.mock('next/server', () => ({
   },
 }))
 
-jest.mock('@/utils/csvLogger', () => ({
-  logUserAction: jest.fn(),
+jest.mock('@/utils/logQueue', () => ({
+  enqueueLogAction: jest.fn(),
 }))
 
-import { logUserAction } from '@/utils/csvLogger'
+import { enqueueLogAction } from '@/utils/logQueue'
 import { POST } from '@/app/api/log-action/route'
 
 const createRequest = (rawBody) => ({
@@ -24,7 +24,7 @@ const createRequest = (rawBody) => ({
 
 describe('/api/log-action validation', () => {
   beforeEach(() => {
-    logUserAction.mockReset()
+    enqueueLogAction.mockReset()
   })
 
   test('returns 413 when body exceeds limit', async () => {
@@ -36,7 +36,7 @@ describe('/api/log-action validation', () => {
 
     expect(response.status).toBe(413)
     expect(data).toEqual({ error: 'Payload too large' })
-    expect(logUserAction).not.toHaveBeenCalled()
+    expect(enqueueLogAction).not.toHaveBeenCalled()
   })
 
   test('returns 400 on invalid JSON', async () => {
@@ -45,7 +45,7 @@ describe('/api/log-action validation', () => {
 
     expect(response.status).toBe(400)
     expect(data).toEqual({ error: 'Invalid JSON' })
-    expect(logUserAction).not.toHaveBeenCalled()
+    expect(enqueueLogAction).not.toHaveBeenCalled()
   })
 
   test('returns 400 on too many fields', async () => {
@@ -73,9 +73,9 @@ describe('/api/log-action validation', () => {
 
     const response = await POST(createRequest(raw))
     expect(response.status).toBe(200)
-    expect(logUserAction).toHaveBeenCalledTimes(1)
+    expect(enqueueLogAction).toHaveBeenCalledTimes(1)
 
-    const sanitized = logUserAction.mock.calls[0][0]
+    const sanitized = enqueueLogAction.mock.calls[0][0]
     expect(typeof sanitized.response).toBe('string')
     expect(sanitized.response).toBe(JSON.stringify({ ok: true }))
     expect(typeof sanitized.messageContent).toBe('string')

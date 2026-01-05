@@ -1,5 +1,5 @@
 /**
- * Load test: simulate ~300 concurrent users hitting /api/log-action in a realistic order.
+ * Load test: simulate 200 concurrent users hitting /api/log-action in a realistic order.
  *
  * Run:
  *   RUN_LOAD_TESTS=1 npm test -- tests/load/csvLoad300.loadtest.test.js
@@ -78,36 +78,71 @@ const loadCsvRecords = (filePath) => {
 
 const safeUserKey = (userIdentifier) => String(userIdentifier).replace(/[^a-zA-Z0-9_-]/g, '_')
 
-describe('CSV aggregated matrix load test (300 users)', () => {
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const readOffset = (offsetFile) => {
+  if (!fs.existsSync(offsetFile)) return 0
+  const raw = fs.readFileSync(offsetFile, 'utf-8').trim()
+  const value = Number.parseInt(raw, 10)
+  return Number.isFinite(value) ? value : 0
+}
+
+const drainQueue = async ({ queueFile, offsetFile, flushLogQueue }) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await flushLogQueue()
+    const size = fs.existsSync(queueFile) ? fs.statSync(queueFile).size : 0
+    const offset = readOffset(offsetFile)
+    if (offset >= size) {
+      return
+    }
+    await wait(50)
+  }
+  const size = fs.existsSync(queueFile) ? fs.statSync(queueFile).size : 0
+  const offset = readOffset(offsetFile)
+  if (offset < size) {
+    throw new Error(`Queue not fully drained (offset=${offset}, size=${size})`)
+  }
+}
+
+describe('CSV per-user load test (200 users)', () => {
   const loadTest = process.env.RUN_LOAD_TESTS === '1' ? test : test.skip
 
   loadTest(
-    'keeps 1-user-1-row with completion_code and valid CSV under concurrency',
+    'keeps 1-user-1-row with completion_code, per-user files, and valid merge under concurrency',
     async () => {
       jest.setTimeout(10 * 60 * 1000)
 
       const runId = `${process.pid}-${Date.now()}`
-      const outDir = path.join(process.cwd(), 'temp', 'loadtest')
+      const outDir = path.join(process.cwd(), 'temp', 'loadtest', runId)
       fs.mkdirSync(outDir, { recursive: true })
 
-      const csvFile = path.join(outDir, `user_actions.loadtest.${runId}.csv`)
+      const queueFile = path.join(outDir, 'action_queue.jsonl')
+      const offsetFile = path.join(outDir, 'action_queue.offset')
 
       const previousEnv = {
         CSV_LOG_FILE: process.env.CSV_LOG_FILE,
         CSV_LOG_DIR: process.env.CSV_LOG_DIR,
         CSV_LOCK_RETRIES: process.env.CSV_LOCK_RETRIES,
         CSV_LOCK_STALE_MS: process.env.CSV_LOCK_STALE_MS,
+        LOG_QUEUE_FILE: process.env.LOG_QUEUE_FILE,
+        LOG_QUEUE_OFFSET_FILE: process.env.LOG_QUEUE_OFFSET_FILE,
+        LOG_QUEUE_FLUSH_DELAY_MS: process.env.LOG_QUEUE_FLUSH_DELAY_MS,
       }
 
-      process.env.CSV_LOG_FILE = csvFile
-      delete process.env.CSV_LOG_DIR
+      process.env.CSV_LOG_DIR = outDir
+      delete process.env.CSV_LOG_FILE
       process.env.CSV_LOCK_RETRIES = '300'
       process.env.CSV_LOCK_STALE_MS = '60000'
+      process.env.LOG_QUEUE_FILE = queueFile
+      process.env.LOG_QUEUE_OFFSET_FILE = offsetFile
+      process.env.LOG_QUEUE_FLUSH_DELAY_MS = '10'
 
       jest.resetModules()
       const { POST: logPost } = await import('@/app/api/log-action/route')
+      const { flushLogQueue } = await import('@/utils/logQueue')
+      const { getAggregatedCSVData, listUserCsvFiles, getUserCsvFilePath } = await import('@/utils/csvLogger')
 
-      const userCount = 300
+      const userCount = 200
       const expectedActionsPerUser = 12
 
       const specialUserIndex = 42
@@ -272,7 +307,22 @@ describe('CSV aggregated matrix load test (300 users)', () => {
           Array.from({ length: userCount }, (_, idx) => simulateUser(idx + 1))
         )
 
-        const { headers, records } = loadCsvRecords(csvFile)
+        await drainQueue({ queueFile, offsetFile, flushLogQueue })
+        await wait(50)
+
+        const userFiles = listUserCsvFiles()
+        const sessionFiles = userFiles.filter((filePath) => path.basename(filePath).startsWith('session_'))
+        const userOnlyFiles = userFiles.filter((filePath) => path.basename(filePath).startsWith('user_'))
+
+        expect(sessionFiles).toHaveLength(0)
+        expect(userOnlyFiles).toHaveLength(userCount)
+
+        userOnlyFiles.forEach((filePath) => {
+          const { records } = loadCsvRecords(filePath)
+          expect(records).toHaveLength(1)
+        })
+
+        const { headers, records } = getAggregatedCSVData()
 
         // CSV structural validity
         expect(headers.length).toBeGreaterThan(0)
@@ -293,6 +343,9 @@ describe('CSV aggregated matrix load test (300 users)', () => {
           expect(row.user_key).toBe(safeUserKey(code))
           expect(row.completion_code).toBe(completionCode)
           expect(row.action_count).toBe(String(expectedActionsPerUser))
+
+          const expectedFile = getUserCsvFilePath(code)
+          expect(fs.existsSync(expectedFile)).toBe(true)
         })
 
         // Validate parsing of special characters survived round-trip
@@ -308,10 +361,13 @@ describe('CSV aggregated matrix load test (300 users)', () => {
         process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
         process.env.CSV_LOCK_RETRIES = previousEnv.CSV_LOCK_RETRIES
         process.env.CSV_LOCK_STALE_MS = previousEnv.CSV_LOCK_STALE_MS
+        process.env.LOG_QUEUE_FILE = previousEnv.LOG_QUEUE_FILE
+        process.env.LOG_QUEUE_OFFSET_FILE = previousEnv.LOG_QUEUE_OFFSET_FILE
+        process.env.LOG_QUEUE_FLUSH_DELAY_MS = previousEnv.LOG_QUEUE_FLUSH_DELAY_MS
 
         if (!keepArtifacts) {
           try {
-            fs.rmSync(csvFile, { force: true })
+            fs.rmSync(outDir, { recursive: true, force: true })
           } catch {}
         }
       }

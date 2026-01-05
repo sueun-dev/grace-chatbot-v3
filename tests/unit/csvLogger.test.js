@@ -11,13 +11,18 @@ import {
   getUserLogs,
   getAllUsers,
   getAggregatedCSVData,
-  getAggregatedCSVFilePath
+  getAggregatedCSVFilePath,
+  getUserCsvFilePath
 } from '@/utils/csvLogger'
 
 jest.mock('fs')
+jest.mock('proper-lockfile', () => ({
+  lock: jest.fn(async () => async () => {})
+}))
 
-describe('Aggregated CSV Logger', () => {
+describe('Per-user CSV Logger', () => {
   const csvDir = path.join(process.cwd(), 'user_logs')
+  const usersDir = path.join(csvDir, 'users')
   const csvFile = path.join(csvDir, 'user_actions.csv')
   const baseHeader =
     'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code\n'
@@ -78,30 +83,46 @@ describe('Aggregated CSV Logger', () => {
     return { headers, records }
   }
 
-  const setFsExistsState = ({ dir = true, file = true } = {}) => {
+  const getLastWriteCall = () => {
+    const calls = fs.writeFileSync.mock.calls
+    return calls[calls.length - 1]
+  }
+
+  const setFsExistsState = ({
+    csvDirExists = true,
+    usersDirExists = true,
+    aggregatedFileExists = true,
+    fileStates = {}
+  } = {}) => {
     fs.existsSync.mockImplementation((target) => {
-      if (target === csvDir) return dir
-      if (target === csvFile) return file
+      if (target === csvDir) return csvDirExists
+      if (target === usersDir) return usersDirExists
+      if (target === csvFile) return aggregatedFileExists
+      if (Object.prototype.hasOwnProperty.call(fileStates, target)) {
+        return fileStates[target]
+      }
       return true
     })
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
-    setFsExistsState({ dir: true, file: true })
+    setFsExistsState({ csvDirExists: true, usersDirExists: true, aggregatedFileExists: true })
     fs.mkdirSync.mockImplementation(() => {})
     fs.writeFileSync.mockImplementation(() => {})
     fs.renameSync.mockImplementation(() => {})
+    fs.readdirSync.mockReturnValue([])
     fs.readFileSync.mockReturnValue(baseHeader)
   })
 
   describe('ensureCSVDirectory', () => {
     test('creates directory and base CSV when missing', async () => {
-      setFsExistsState({ dir: false, file: false })
+      setFsExistsState({ csvDirExists: false, usersDirExists: false, aggregatedFileExists: false })
 
       await ensureCSVDirectory()
 
       expect(fs.mkdirSync).toHaveBeenCalledWith(csvDir, { recursive: true })
+      expect(fs.mkdirSync).toHaveBeenCalledWith(usersDir, { recursive: true })
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         csvFile,
         expect.stringContaining('user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code')
@@ -117,12 +138,14 @@ describe('Aggregated CSV Logger', () => {
 
   describe('initializeUserCSV', () => {
     test('adds an empty row for a new user', async () => {
+      const userFile = getUserCsvFilePath('user-123')
+      setFsExistsState({ fileStates: { [userFile]: false } })
       const csvContent = 'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count\n'
       fs.readFileSync.mockReturnValue(csvContent)
 
       await initializeUserCSV('user-123')
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { records } = csvToRecords(output)
       const row = records.find((record) => record.user_key === 'user-123')
       expect(row).toMatchObject({
@@ -136,8 +159,8 @@ describe('Aggregated CSV Logger', () => {
         action_count: '0',
         completion_code: ''
       })
-      const tempPath = fs.writeFileSync.mock.calls[0][0]
-      expect(fs.renameSync).toHaveBeenCalledWith(tempPath, csvFile)
+      const tempPath = getLastWriteCall()[0]
+      expect(fs.renameSync).toHaveBeenCalledWith(tempPath, userFile)
     })
 
     test('does not duplicate an existing user row', async () => {
@@ -145,6 +168,8 @@ describe('Aggregated CSV Logger', () => {
         'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count',
         'Original_User,Original User,general-ai,,5,1'
       ].join('\n')
+      const userFile = getUserCsvFilePath('Original User')
+      setFsExistsState({ fileStates: { [userFile]: true } })
       fs.readFileSync.mockReturnValue(existing)
 
       await initializeUserCSV('Original User')
@@ -155,6 +180,8 @@ describe('Aggregated CSV Logger', () => {
 
   describe('logUserAction', () => {
     test('creates action columns and stores first user action', async () => {
+      const userFile = getUserCsvFilePath('MatrixUser01')
+      setFsExistsState({ fileStates: { [userFile]: false } })
       const payload = {
         userIdentifier: 'MatrixUser01',
         sessionId: 'session-xyz',
@@ -165,7 +192,7 @@ describe('Aggregated CSV Logger', () => {
 
       await logUserAction(payload)
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { headers, records } = csvToRecords(output)
       expect(headers).toEqual(expect.arrayContaining(['action_1_timestamp', 'action_1_action_type', 'action_1_session_id']))
       const row = records.find((record) => record.user_key === 'MatrixUser01')
@@ -174,11 +201,13 @@ describe('Aggregated CSV Logger', () => {
       expect(row.action_1_session_id).toBe('session-xyz')
       expect(row.action_1_action_type).toBe('BUTTON_CLICKED')
       expect(row.action_1_message_content).toBe('hello')
-      const tempPath = fs.writeFileSync.mock.calls[0][0]
-      expect(fs.renameSync).toHaveBeenCalledWith(tempPath, csvFile)
+      const tempPath = getLastWriteCall()[0]
+      expect(fs.renameSync).toHaveBeenCalledWith(tempPath, userFile)
     })
 
     test('appends additional actions to the same user row', async () => {
+      const userFile = getUserCsvFilePath('MatrixUser01')
+      setFsExistsState({ fileStates: { [userFile]: true } })
       const existing = [
         'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,action_1_timestamp,action_1_action_type',
         'MatrixUser01,MatrixUser01,general-ai,,5,1,2024-01-01T00:00:00.000Z,INIT'
@@ -191,7 +220,7 @@ describe('Aggregated CSV Logger', () => {
         response: '42'
       })
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { headers, records } = csvToRecords(output)
       expect(headers).toEqual(expect.arrayContaining(['action_2_timestamp', 'action_2_action_type', 'action_2_response']))
       const row = records.find((record) => record.user_key === 'MatrixUser01')
@@ -201,8 +230,10 @@ describe('Aggregated CSV Logger', () => {
     })
 
     test('sanitizes user identifier for row key while keeping original label', async () => {
+      const userFile = getUserCsvFilePath('user@domain.com')
+      setFsExistsState({ fileStates: { [userFile]: false } })
       await logUserAction({ userIdentifier: 'user@domain.com', actionType: 'STEP' })
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { records } = csvToRecords(output)
       const row = records.find((record) => record.user_key === 'user_domain_com')
       expect(row).toBeTruthy()
@@ -210,6 +241,8 @@ describe('Aggregated CSV Logger', () => {
     })
 
     test('captures dynamic fields and updates total score', async () => {
+      const userFile = getUserCsvFilePath('Dynamic User')
+      setFsExistsState({ fileStates: { [userFile]: true } })
       const existing = [
         'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_action_type,action_1_score',
         'Dynamic_User,Dynamic User,general-ai,,5,1,,2024-01-01T00:00:00.000Z,INIT,5'
@@ -226,7 +259,7 @@ describe('Aggregated CSV Logger', () => {
         totalScore: 25
       })
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { headers, records } = csvToRecords(output)
       expect(headers).not.toContain('action_2_total_score')
       expect(headers).not.toContain('action_2_risk_level')
@@ -244,6 +277,9 @@ describe('Aggregated CSV Logger', () => {
     })
 
     test('uses a session-keyed row before user identifier exists', async () => {
+      const sessionFile = path.join(usersDir, 'session_session_abc.csv')
+      setFsExistsState({ fileStates: { [sessionFile]: false } })
+      fs.readdirSync.mockReturnValue([])
       fs.readFileSync.mockReturnValue(baseHeader)
 
       await logUserAction({
@@ -252,7 +288,7 @@ describe('Aggregated CSV Logger', () => {
         actionDetails: 'Entered site'
       })
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { records } = csvToRecords(output)
       const row = records.find((record) => record.user_key === '__session__session_abc')
       expect(row).toBeTruthy()
@@ -265,7 +301,13 @@ describe('Aggregated CSV Logger', () => {
         'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_session_id,action_1_action_type',
         '__session__session_abc,unknown,general-ai,,0,1,,2024-01-01T00:00:00.000Z,session_abc,PAGE_VISITED'
       ].join('\n')
-      fs.readFileSync.mockReturnValue(existing)
+      const sessionFile = path.join(usersDir, 'session_session_abc.csv')
+      const userFile = getUserCsvFilePath('USER001')
+      setFsExistsState({ fileStates: { [sessionFile]: true, [userFile]: false } })
+      fs.readFileSync.mockImplementation((target) => {
+        if (target === sessionFile) return existing
+        return baseHeader
+      })
 
       await logUserAction({
         userIdentifier: 'USER001',
@@ -273,7 +315,7 @@ describe('Aggregated CSV Logger', () => {
         actionType: 'CODE_ENTERED'
       })
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { records } = csvToRecords(output)
       const sessionRow = records.find((record) => record.user_key === '__session__session_abc')
       expect(sessionRow).toBeFalsy()
@@ -282,6 +324,7 @@ describe('Aggregated CSV Logger', () => {
       expect(userRow.action_count).toBe('2')
       expect(userRow.action_1_action_type).toBe('PAGE_VISITED')
       expect(userRow.action_2_action_type).toBe('CODE_ENTERED')
+      expect(fs.unlinkSync).toHaveBeenCalledWith(sessionFile)
     })
 
     test('avoids creating a late session row when user row already exists for the session', async () => {
@@ -289,6 +332,10 @@ describe('Aggregated CSV Logger', () => {
         'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_session_id,action_1_action_type',
         'USER001,USER001,general-ai,,0,1,,2024-01-01T00:00:00.000Z,session_abc,CODE_ENTERED'
       ].join('\n')
+      const userFile = getUserCsvFilePath('USER001')
+      const sessionFile = path.join(usersDir, 'session_session_abc.csv')
+      setFsExistsState({ fileStates: { [sessionFile]: false, [userFile]: true } })
+      fs.readdirSync.mockReturnValue([path.basename(userFile)])
       fs.readFileSync.mockReturnValue(existing)
 
       await logUserAction({
@@ -296,7 +343,7 @@ describe('Aggregated CSV Logger', () => {
         actionType: 'PAGE_VISITED'
       })
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { records } = csvToRecords(output)
       const sessionRow = records.find((record) => record.user_key === '__session__session_abc')
       expect(sessionRow).toBeFalsy()
@@ -307,6 +354,8 @@ describe('Aggregated CSV Logger', () => {
     })
 
     test('stores completion code on the base user row', async () => {
+      const userFile = getUserCsvFilePath('USER001')
+      setFsExistsState({ fileStates: { [userFile]: false } })
       fs.readFileSync.mockReturnValue(baseHeader)
 
       await logUserAction({
@@ -316,7 +365,7 @@ describe('Aggregated CSV Logger', () => {
         completionCode: 'ABC123'
       })
 
-      const output = fs.writeFileSync.mock.calls[0][1]
+      const output = getLastWriteCall()[1]
       const { records } = csvToRecords(output)
       const row = records.find((record) => record.user_key === 'USER001')
       expect(row).toBeTruthy()
@@ -330,6 +379,7 @@ describe('Aggregated CSV Logger', () => {
         'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_timestamp,action_1_action_type,action_1_response,action_2_timestamp,action_2_action_type',
         'MatrixUser01,MatrixUser01,doctor-ai,High Risk,15,2,,2024-01-01T00:00:00.000Z,INIT,,2024-01-01T00:05:00.000Z,ANSWERED'
       ].join('\n')
+      fs.readdirSync.mockReturnValue([])
       fs.readFileSync.mockReturnValue(csvContent)
 
       const logs = getUserLogs('MatrixUser01')
@@ -340,6 +390,7 @@ describe('Aggregated CSV Logger', () => {
     })
 
     test('returns empty array for users without entries', () => {
+      fs.readdirSync.mockReturnValue([])
       fs.readFileSync.mockReturnValue(baseHeader)
       const logs = getUserLogs('Missing')
       expect(logs).toEqual([])
@@ -353,6 +404,7 @@ describe('Aggregated CSV Logger', () => {
         'safe1,First User,general-ai,,0,0,',
         'safe2,Second User,doctor-ai,Moderate,10,1,'
       ].join('\n')
+      fs.readdirSync.mockReturnValue([])
       fs.readFileSync.mockReturnValue(csvContent)
 
       expect(getAllUsers()).toEqual(['First User', 'Second User'])
@@ -363,6 +415,7 @@ describe('Aggregated CSV Logger', () => {
         'user_key,user_identifier,action_count,action_1_action_type',
         'user1,User One,1,CLICK'
       ].join('\n')
+      fs.readdirSync.mockReturnValue([])
       fs.readFileSync.mockReturnValue(csvContent)
 
       const { headers, records } = getAggregatedCSVData()

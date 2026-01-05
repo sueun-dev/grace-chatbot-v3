@@ -34,7 +34,15 @@ jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
   writeFileSync: jest.fn(),
   renameSync: jest.fn(),
-  readFileSync: jest.fn(() => 'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code\n'),
+  readFileSync: jest.fn(() => [
+    'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
+    'u1,USER1,general-ai,,,,0,0,',
+    '',
+  ].join('\n')),
+  readdirSync: jest.fn(() => []),
+  promises: {
+    appendFile: jest.fn(() => Promise.resolve()),
+  },
 }))
 
 const createRequest = ({ url = 'http://localhost:3001', body, headers = {}, method = 'GET' } = {}) => ({
@@ -223,7 +231,7 @@ describe('API Integration Tests', () => {
       expect(response.status).toBe(200)
       expect(data).toEqual({
         success: true,
-        message: 'Action logged successfully'
+        message: 'Action queued successfully'
       })
     })
 
@@ -375,12 +383,8 @@ describe('API Integration Tests', () => {
       expect(fs.writeFileSync).toHaveBeenCalled()
     })
 
-    test('updates existing matrix for repeated user actions', async () => {
+    test('enqueues repeated user actions', async () => {
       const fs = require('fs')
-      fs.readFileSync.mockReturnValue([
-        'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_action_type',
-        'USER002,USER002,general-ai,,5,1,,INIT'
-      ].join('\n'))
 
       const request = createRequest({
         url: 'http://localhost:3001/api/log-action',
@@ -393,8 +397,8 @@ describe('API Integration Tests', () => {
 
       await logPost(request)
 
-      const output = fs.writeFileSync.mock.calls.pop()[1]
-      expect(output).toContain('action_2_action_type')
+      expect(fs.promises.appendFile).toHaveBeenCalled()
+      const [, output] = fs.promises.appendFile.mock.calls.pop()
       expect(output).toContain('SUBSEQUENT_ACTION')
     })
   })

@@ -32,7 +32,8 @@ describe('Home page flow', () => {
 
   test('logs page visit, verifies code, and navigates to ai-chatbot', async () => {
     const push = jest.fn()
-    useRouter.mockReturnValue({ push })
+    const prefetch = jest.fn()
+    useRouter.mockReturnValue({ push, prefetch })
 
     render(<Home />)
 
@@ -68,4 +69,3 @@ describe('Home page flow', () => {
     })
   })
 })
-
