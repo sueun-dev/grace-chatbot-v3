@@ -69,46 +69,38 @@ const RESERVED_DATA_KEYS = new Set([
   'completion_code'
 ]);
 
-// Cross-process lock + in-process queue to serialize read-modify-write cycles.
-let writeQueue = Promise.resolve();
-const withCsvLocks = (filePaths, task) => {
+// Cross-process lock to serialize read-modify-write cycles per file.
+const withCsvLocks = async (filePaths, task) => {
   const targets = Array.isArray(filePaths) ? filePaths : [filePaths];
   const uniqueTargets = Array.from(new Set(targets.filter(Boolean)));
-  const run = async () => {
-    if (!uniqueTargets.length) {
-      return task();
-    }
-    uniqueTargets.forEach((filePath) => {
-      ensureBaseCSVFile(filePath);
-    });
-    const locks = uniqueTargets.slice().sort();
-    const releases = [];
-    for (const filePath of locks) {
-      const release = await lockfile.lock(filePath, {
-        stale: CSV_LOCK_STALE_MS,
-        retries: {
-          retries: CSV_LOCK_RETRIES,
-          factor: 1.2,
-          minTimeout: 100,
-          maxTimeout: 2_000,
-          randomize: true
-        }
-      });
-      releases.push(release);
-    }
-    try {
-      return await task();
-    } finally {
-      for (const release of releases.reverse()) {
-        await release();
+  if (!uniqueTargets.length) {
+    return task();
+  }
+  uniqueTargets.forEach((filePath) => {
+    ensureBaseCSVFile(filePath);
+  });
+  const locks = uniqueTargets.slice().sort();
+  const releases = [];
+  for (const filePath of locks) {
+    const release = await lockfile.lock(filePath, {
+      stale: CSV_LOCK_STALE_MS,
+      retries: {
+        retries: CSV_LOCK_RETRIES,
+        factor: 1.2,
+        minTimeout: 100,
+        maxTimeout: 2_000,
+        randomize: true
       }
+    });
+    releases.push(release);
+  }
+  try {
+    return await task();
+  } finally {
+    for (const release of releases.reverse()) {
+      await release();
     }
-  };
-
-  const chained = writeQueue.then(run, run);
-  // Keep queue progressing even if a task fails.
-  writeQueue = chained.catch(() => {});
-  return chained;
+  }
 };
 
 const ensureDirectory = (dir) => {
@@ -722,13 +714,60 @@ export const logUserAction = async (data) => {
   });
 };
 
+const runPool = async (tasks, concurrency) => {
+  if (!tasks.length) return;
+  const limit = Math.max(1, Math.min(concurrency, tasks.length));
+  let index = 0;
+  const workers = Array.from({ length: limit }, async () => {
+    while (true) {
+      const current = index;
+      index += 1;
+      if (current >= tasks.length) break;
+      await tasks[current]();
+    }
+  });
+  await Promise.all(workers);
+};
+
 export const logUserActionsBatch = async (actions = []) => {
   if (!Array.isArray(actions) || actions.length === 0) {
     return;
   }
-  for (const action of actions) {
-    await logUserAction(action);
-  }
+
+  const sessionToUser = new Map();
+  actions.forEach((action) => {
+    const userIdentifier = action?.userIdentifier ? String(action.userIdentifier).trim() : '';
+    const sessionId = action?.sessionId ? String(action.sessionId).trim() : '';
+    if (userIdentifier && sessionId) {
+      sessionToUser.set(sessionId, userIdentifier);
+    }
+  });
+
+  const groups = new Map();
+  actions.forEach((action) => {
+    const userIdentifier = action?.userIdentifier ? String(action.userIdentifier).trim() : '';
+    const sessionId = action?.sessionId ? String(action.sessionId).trim() : '';
+    const resolvedUser = userIdentifier || (sessionId ? sessionToUser.get(sessionId) : '');
+    const key = resolvedUser
+      ? `user:${resolvedUser}`
+      : sessionId
+        ? `session:${sessionId}`
+        : 'unknown';
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(action);
+  });
+
+  const tasks = Array.from(groups.values(), (group) => async () => {
+    for (const action of group) {
+      await logUserAction(action);
+    }
+  });
+
+  const concurrency =
+    Number(process.env.CSV_LOG_BATCH_CONCURRENCY) || Math.min(tasks.length, 5);
+  await runPool(tasks, concurrency);
 };
 
 // Get all action logs as structured objects for a specific user
@@ -766,7 +805,13 @@ export const getAllUsers = () => {
   return records.map(record => record.user_identifier || record.user_key || 'unknown');
 };
 
-const mergeAggregatedRecords = (headers, records, aggregatedHeaders, aggregatedRecords) => {
+const mergeAggregatedRecords = (
+  headers,
+  records,
+  aggregatedHeaders,
+  aggregatedRecords,
+  skipKeys = new Set()
+) => {
   aggregatedHeaders.forEach((header) => {
     if (header && !headers.includes(header)) {
       headers.push(header);
@@ -777,6 +822,9 @@ const mergeAggregatedRecords = (headers, records, aggregatedHeaders, aggregatedR
     if (!record || Object.keys(record).length === 0) return;
     const rawKey = record.user_key || record.user_identifier || 'unknown';
     const safeKey = sanitizeUserIdentifier(String(rawKey));
+    if (skipKeys.has(safeKey)) {
+      return;
+    }
     record.user_key = safeKey;
     if (!record.user_identifier) {
       record.user_identifier = rawKey || safeKey || 'unknown';
@@ -799,21 +847,35 @@ export const getAggregatedCSVData = () => {
   ensureDirectory(USERS_DIR);
   const headers = [...BASE_HEADERS];
   const records = new Map();
-
-  if (fs.existsSync(CSV_FILE)) {
-    const legacy = loadCsv(CSV_FILE);
-    mergeAggregatedRecords(headers, records, legacy.headers, legacy.records);
-  }
+  const existingKeys = new Set();
 
   if (fs.existsSync(USERS_DIR)) {
     const files = fs.readdirSync(USERS_DIR).filter(
-      (name) => name.endsWith('.csv') && name.startsWith(USER_FILE_PREFIX)
+      (name) =>
+        name.endsWith('.csv') &&
+        (name.startsWith(USER_FILE_PREFIX) || name.startsWith(SESSION_FILE_PREFIX))
     );
     files.forEach((name) => {
+      if (name.startsWith(USER_FILE_PREFIX)) {
+        const key = sanitizeUserIdentifier(
+          name.slice(USER_FILE_PREFIX.length, -'.csv'.length)
+        );
+        if (key) existingKeys.add(key);
+      }
+      if (name.startsWith(SESSION_FILE_PREFIX)) {
+        const sessionId = name.slice(SESSION_FILE_PREFIX.length, -'.csv'.length);
+        const sessionKey = getSessionRowKey(sessionId);
+        if (sessionKey) existingKeys.add(sessionKey);
+      }
       const filePath = path.join(USERS_DIR, name);
       const data = loadCsv(filePath);
       mergeAggregatedRecords(headers, records, data.headers, data.records);
     });
+  }
+
+  if (fs.existsSync(CSV_FILE)) {
+    const legacy = loadCsv(CSV_FILE);
+    mergeAggregatedRecords(headers, records, legacy.headers, legacy.records, existingKeys);
   }
 
   return { headers: normalizeHeaders(headers), records: Array.from(records.values()) };
@@ -823,7 +885,11 @@ export const getAggregatedCSVFilePath = () => CSV_FILE;
 export const listUserCsvFiles = () => {
   if (!fs.existsSync(USERS_DIR)) return [];
   return fs.readdirSync(USERS_DIR)
-    .filter((name) => name.endsWith('.csv') && name.startsWith(USER_FILE_PREFIX))
+    .filter(
+      (name) =>
+        name.endsWith('.csv') &&
+        (name.startsWith(USER_FILE_PREFIX) || name.startsWith(SESSION_FILE_PREFIX))
+    )
     .map((name) => path.join(USERS_DIR, name));
 };
 export { getUserCsvFilePath };

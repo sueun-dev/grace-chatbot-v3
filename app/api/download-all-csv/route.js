@@ -58,11 +58,19 @@ export async function GET(request) {
     archive.pipe(output);
 
     const userFileKeys = new Set();
+    const sessionFileKeys = new Set();
     filesToAdd.forEach((filePath) => {
       const baseName = path.basename(filePath);
       archive.file(filePath, { name: `users/${baseName}` });
       if (baseName.startsWith('user_') && baseName.endsWith('.csv')) {
         userFileKeys.add(baseName.slice('user_'.length, -'.csv'.length));
+      }
+      if (baseName.startsWith('session_') && baseName.endsWith('.csv')) {
+        const rawSessionId = baseName.slice('session_'.length, -'.csv'.length);
+        const safeSessionId = rawSessionId.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+        if (safeSessionId) {
+          sessionFileKeys.add(`__session__${safeSessionId}`);
+        }
       }
     });
 
@@ -81,7 +89,7 @@ export async function GET(request) {
 
       records.forEach((record) => {
         const safeUserKey = String(record.user_key || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
-        if (userFileKeys.has(safeUserKey)) {
+        if (userFileKeys.has(safeUserKey) || sessionFileKeys.has(safeUserKey)) {
           return;
         }
         const name = `users/user_${safeUserKey}.csv`;

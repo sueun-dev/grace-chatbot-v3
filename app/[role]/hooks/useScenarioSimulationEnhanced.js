@@ -114,7 +114,7 @@ export const useScenarioSimulationEnhanced = () => {
       await logAction({
         actionType: ACTION_TYPES.MESSAGE_SENT,
         actionDetails: "User sent message after completion",
-        message: userInput,
+        messageContent: userInput,
       });
 
       return true; // Return true to prevent any other handler from processing

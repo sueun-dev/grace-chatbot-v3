@@ -8,6 +8,19 @@ import { toast } from "sonner";
 import Button from "./[role]/components/Button";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
+const HOST_ROLE_MAP = {
+  "52.15.106.173": "ai-chatbot",
+  "3.144.152.71": "student",
+  "3.145.5.93": "medical-professional",
+};
+
+const getTargetPath = () => {
+  if (typeof window === "undefined") return "/ai-chatbot";
+  const host = window.location.hostname;
+  const role = HOST_ROLE_MAP[host] || "ai-chatbot";
+  return `/${role}`;
+};
+
 export default function Home() {
   const router = useRouter();
   const VIEW = {
@@ -44,7 +57,7 @@ export default function Home() {
 
   useEffect(() => {
     if (view !== VIEW.WELCOME) return;
-    const prefetch = () => router.prefetch("/ai-chatbot");
+    const prefetch = () => router.prefetch(getTargetPath());
     if (typeof window === "undefined") return;
     if (typeof window.requestIdleCallback === "function") {
       window.requestIdleCallback(prefetch);
@@ -114,12 +127,12 @@ export default function Home() {
     // Log chat start
     void logAction({
       actionType: ACTION_TYPES.CHAT_STARTED,
-      actionDetails: 'User started chat with general AI',
+      actionDetails: 'User started chat',
       pageVisited: 'welcome'
     });
     
-    // Redirect to general AI chatbot
-    router.push("/ai-chatbot");
+    // Redirect to role-specific chatbot
+    router.push(getTargetPath());
   };
 
   return (
