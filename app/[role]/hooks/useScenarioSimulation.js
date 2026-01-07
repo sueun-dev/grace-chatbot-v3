@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { scenarioSimulations } from "@/utils/questionnaire";
 import { generateTimestamp } from "../components/chatService";
+import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useScenarioSimulation = () => {
   const [simulationState, setSimulationState] = useState({
@@ -24,6 +25,13 @@ export const useScenarioSimulation = () => {
       currentScenarioIndex: 0,
       completedScenarios: [],
       currentStep: 0,
+    });
+
+    const firstScenarioKey = scenarioKeys[0];
+    void logAction({
+      actionType: ACTION_TYPES.SIMULATION_STARTED,
+      actionDetails: `Started scenario: ${firstScenarioKey}`,
+      scenarioType: firstScenarioKey,
     });
 
     // Show intro message
@@ -169,6 +177,13 @@ To wrap things up:
                 isUser: false,
               };
 
+              void logAction({
+                actionType: ACTION_TYPES.SIMULATION_COMPLETED,
+                actionDetails: "Simulation completed",
+                completionCode,
+                totalScenarios: scenarioKeys.length,
+              });
+
               setMessages((prevMessages) => {
                 console.log("Adding completion code to messages");
                 return [...prevMessages, codeMsg];
@@ -243,6 +258,16 @@ To wrap things up:
     const scenarioData = scenarioSimulations[currentKey];
     const isAppropriate = checkIfAppropriate(userAnswer, scenarioData);
     const currentAttempt = simulationState.attempts + 1;
+
+    void logAction({
+      actionType: ACTION_TYPES.SIMULATION_INPUT,
+      actionDetails: `Scenario response evaluated: ${isAppropriate ? "appropriate" : "inappropriate"}`,
+      scenarioType: currentKey,
+      scenarioIndex: simulationState.currentScenarioIndex,
+      retryCount: currentAttempt - 1,
+      response: userAnswer,
+      isAppropriate,
+    });
 
     if (isAppropriate) {
       // Correct answer

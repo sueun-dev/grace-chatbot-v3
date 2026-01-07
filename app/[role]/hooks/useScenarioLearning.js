@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { scenarioMessages, scenarioQuestions } from "@/utils/scenarioContent";
 import { generateTimestamp } from "../components/chatService";
+import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useScenarioLearning = () => {
   const [scenarioState, setScenarioState] = useState({
@@ -48,6 +49,13 @@ export const useScenarioLearning = () => {
       currentStep: 1, // Start directly at step 1 (first scenario content)
     });
 
+    void logAction({
+      actionType: ACTION_TYPES.SCENARIO_STARTED,
+      actionDetails: `Scenario learning started: ${scenarioKey}`,
+      scenarioType: scenarioKey,
+      riskLevel: riskLevel?.level || "",
+    });
+
     // Directly show the first scenario content instead of welcome message
     showScenarioContent(scenarioKey, 1, setMessages);
   };
@@ -89,6 +97,8 @@ export const useScenarioLearning = () => {
   };
 
   const handleScenarioComplete = (setMessages, startScenarioSimulation) => {
+    const scenarioKey = scenarioState.currentScenario?.key || "";
+
     setScenarioState((prev) => ({
       ...prev,
       completedScenarios: [
@@ -99,6 +109,12 @@ export const useScenarioLearning = () => {
       currentScenario: null,
       currentStep: 0,
     }));
+
+    void logAction({
+      actionType: ACTION_TYPES.SCENARIO_COMPLETED,
+      actionDetails: "Scenario learning completed",
+      scenarioType: scenarioKey,
+    });
 
     // Show completion message and then start scenario simulation
     const completionMsg = {
@@ -147,6 +163,13 @@ export const useScenarioLearning = () => {
   ) => {
     // Handle scenario learning responses
     if (option && typeof option === "object" && option.type) {
+      void logAction({
+        actionType: ACTION_TYPES.SCENARIO_OPTION_SELECTED,
+        actionDetails: `Scenario step advanced: ${option.type}`,
+        scenarioType: scenarioState.currentScenario?.key || "",
+        optionSelected: option.type,
+      });
+
       if (option.type === "continue_scenario") {
         // After message, show question
         const nextStep = scenarioState.currentStep + 1;

@@ -10,6 +10,7 @@ import { useQuestionnaire } from "../hooks/useQuestionnaire";
 import { useScenarioLearning } from "../hooks/useScenarioLearning";
 import { useRouter } from "next/navigation";
 import { useScenarioSimulation } from "../hooks/useScenarioSimulation";
+import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 const MedicalProfessionalChatbot = () => {
   const router = useRouter();
@@ -58,6 +59,11 @@ const MedicalProfessionalChatbot = () => {
 
   // Automatically start questionnaire when component mounts
   useEffect(() => {
+    logAction({
+      actionType: ACTION_TYPES.PAGE_VISITED,
+      actionDetails: "User entered medical professional chatbot page",
+      pageVisited: "medical-professional",
+    });
     handleStartQuestionnaire();
   }, []);
 
@@ -66,8 +72,14 @@ const MedicalProfessionalChatbot = () => {
     setShowSidebar(!showSidebar);
   };
 
-  const handleStartQuestionnaire = () => {
+  const handleStartQuestionnaire = async () => {
     startQuestionnaire(setMessages, setShowChatList, setIsLoading);
+
+    await logAction({
+      actionType: ACTION_TYPES.QUESTIONNAIRE_STARTED,
+      actionDetails: "Questionnaire started",
+      pageVisited: "medical-professional",
+    });
   };
 
   const handleOptionSelect = async (option) => {
@@ -76,6 +88,13 @@ const MedicalProfessionalChatbot = () => {
       option && typeof option === "object" && (option.type || option.value)
         ? option.type || option.value
         : option;
+
+    await logAction({
+      actionType: ACTION_TYPES.OPTION_SELECTED,
+      actionDetails: `Option selected: ${JSON.stringify(option)}`,
+      optionSelected: normalized,
+      pageVisited: "medical-professional",
+    });
 
     // Handle scenario simulation responses
     const simulationResult = handleSimulationOptionSelect(option, setMessages);

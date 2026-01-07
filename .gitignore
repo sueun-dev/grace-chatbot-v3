@@ -28,6 +28,7 @@
 /test-results/
 /playwright-report/
 *.tmp
+/.tmp-ssm-*.json
 
 # misc
 .DS_Store

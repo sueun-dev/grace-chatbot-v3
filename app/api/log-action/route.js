@@ -1,54 +1,25 @@
 import { NextResponse } from 'next/server';
 import { enqueueLogAction } from '@/utils/logQueue';
 
-const MAX_BODY_BYTES = 80 * 1024; // 80KB per log request
-const FIELD_LIMITS = {
-  userIdentifier: 100,
-  sessionId: 100,
-  chatbotType: 50,
-  actionType: 64,
-  actionDetails: 500,
-  questionId: 100,
-  response: 2000,
-  score: 50,
-  scenarioType: 100,
-  messageContent: 5000,
-  optionSelected: 200,
-  pageVisited: 500,
-  timestamp: 64,
-};
-const GENERIC_VALUE_LIMIT = 2000;
-const MAX_FIELD_COUNT = 50;
-
-const limitString = (value, limit) => {
-  if (typeof value !== 'string') return value;
-  return value.length > limit ? value.slice(0, limit) : value;
-};
+const MAX_BODY_BYTES = 256 * 1024; // 256KB per log request
 
 const sanitizePayload = (payload) => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error('Invalid payload shape');
   }
 
-  const keys = Object.keys(payload);
-  if (keys.length > MAX_FIELD_COUNT) {
-    throw new Error('Too many fields');
-  }
-
   const sanitized = {};
-  keys.forEach((key) => {
+  Object.keys(payload).forEach((key) => {
     const value = payload[key];
-    const limit = FIELD_LIMITS[key] ?? GENERIC_VALUE_LIMIT;
     if (typeof value === 'string') {
-      sanitized[key] = limitString(value, limit);
+      sanitized[key] = value;
     } else if (typeof value === 'number' || typeof value === 'boolean') {
       sanitized[key] = value;
     } else if (value === null || value === undefined) {
       sanitized[key] = '';
     } else {
-      // For objects/arrays/others, stringify and clamp
-      const stringified = limitString(JSON.stringify(value), limit);
-      sanitized[key] = stringified;
+      // For objects/arrays/others, stringify
+      sanitized[key] = JSON.stringify(value);
     }
   });
 
