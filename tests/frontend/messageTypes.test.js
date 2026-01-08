@@ -119,6 +119,43 @@ describe('Message components', () => {
       jest.useRealTimers()
     })
 
+    test('renders myths section content when provided', () => {
+      const onAnswer = jest.fn()
+      const message = {
+        id: 12,
+        type: 'scenario',
+        scenarioData: {
+          title: 'Myths vs. Facts',
+          sections: [
+            {
+              content: "Let's clear up some common misconceptions:",
+              myths: [
+                {
+                  myth: 'Drinking coffee will sober you up.',
+                  fact: 'Only time helps your body process alcohol.'
+                },
+                {
+                  myth: "If I don't feel drunk, I'm okay to drive.",
+                  fact: 'Alcohol can impair judgment before you feel drunk.'
+                }
+              ]
+            }
+          ]
+        },
+        timestamp: '10:00',
+        isUser: false,
+      }
+
+      render(<ScenarioMessage message={message} onAnswer={onAnswer} />)
+
+      expect(screen.getAllByText('Myth').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Fact').length).toBeGreaterThan(0)
+      expect(screen.getByText('Drinking coffee will sober you up.')).toBeInTheDocument()
+      expect(screen.getByText('Only time helps your body process alcohol.')).toBeInTheDocument()
+      expect(screen.getByText("If I don't feel drunk, I'm okay to drive.")).toBeInTheDocument()
+      expect(screen.getByText('Alcohol can impair judgment before you feel drunk.')).toBeInTheDocument()
+    })
+
     test('shows feedback for question and emits continue_question', () => {
       const onAnswer = jest.fn()
       const message = {
