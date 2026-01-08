@@ -251,6 +251,30 @@ const ScenarioMessage = ({ message, onAnswer }) => {
                 ))}
               </div>
             )}
+
+            {section.myths && (
+              <div className="space-y-[12px]">
+                {section.myths.map((item, itemIndex) => (
+                  <div
+                    key={itemIndex}
+                    className="rounded-[8px] border border-[#F0F2F5] bg-white p-[12px]"
+                  >
+                    <p className="text-[#19213D] text-[14px] font-semibold">
+                      Myth
+                    </p>
+                    <p className="text-[#666F8D] text-[14px] leading-[130%]">
+                      {item.myth}
+                    </p>
+                    <p className="mt-[8px] text-[#19213D] text-[14px] font-semibold">
+                      Fact
+                    </p>
+                    <p className="text-[#666F8D] text-[14px] leading-[130%]">
+                      {item.fact}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
 
