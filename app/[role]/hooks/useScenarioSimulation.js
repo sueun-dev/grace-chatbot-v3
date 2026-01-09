@@ -19,15 +19,59 @@ export const useScenarioSimulation = () => {
     "helping_friend",
   ];
 
-  const startScenarioSimulation = (setMessages) => {
+  const defaultScenarioList = scenarioKeys
+    .map((key, index) => {
+      const scenario = scenarioSimulations[key];
+      if (!scenario) return null;
+      return {
+        id: scenario.id ?? index + 1,
+        scenarioKey: scenario.scenarioKey || key,
+        ...scenario,
+      };
+    })
+    .filter(Boolean);
+  const [scenarioList, setScenarioList] = useState(defaultScenarioList);
+
+  const normalizeScenarioList = (scenarios) => {
+    if (!Array.isArray(scenarios) || scenarios.length === 0) {
+      return defaultScenarioList;
+    }
+    return scenarios.map((scenario, index) => {
+      const safeScenario =
+        scenario && typeof scenario === "object"
+          ? scenario
+          : { description: String(scenario ?? "") };
+      const scenarioKey =
+        safeScenario.scenarioKey || safeScenario.type || `scenario_${index + 1}`;
+      return {
+        id: safeScenario.id ?? index + 1,
+        scenarioKey,
+        ...safeScenario,
+      };
+    });
+  };
+
+  const startScenarioSimulation = (arg1, arg2) => {
+    const setMessages = typeof arg1 === "function" ? arg1 : arg2;
+    if (typeof setMessages !== "function") {
+      return;
+    }
+    const scenarios = Array.isArray(arg1) ? arg1 : null;
+    const normalizedScenarios = normalizeScenarioList(scenarios);
+    setScenarioList(normalizedScenarios);
+
     setSimulationState({
       isActive: true,
       currentScenarioIndex: 0,
       completedScenarios: [],
       currentStep: 0,
+      waitingForInput: false,
+      attempts: 0,
     });
 
-    const firstScenarioKey = scenarioKeys[0];
+    const firstScenario = normalizedScenarios[0];
+    const firstScenarioKey =
+      firstScenario?.scenarioKey || firstScenario?.type || scenarioKeys[0];
     void logAction({
       actionType: ACTION_TYPES.SIMULATION_STARTED,
       actionDetails: `Started scenario: ${firstScenarioKey}`,
@@ -48,17 +92,26 @@ export const useScenarioSimulation = () => {
 
     // Start first scenario after a brief delay
     setTimeout(() => {
-      showNextScenario(setMessages, 0);
+      showNextScenario(setMessages, 0, normalizedScenarios);
     }, 2000);
   };
 
-  const showNextScenario = (setMessages, scenarioIndex = null) => {
+  const showNextScenario = (setMessages, scenarioIndex = null, scenarios = null) => {
+    const listToUse =
+      Array.isArray(scenarios) && scenarios.length
+        ? scenarios
+        : scenarioList;
+    if (!listToUse || listToUse.length === 0) {
+      return;
+    }
     const indexToUse =
       scenarioIndex !== null
         ? scenarioIndex
         : simulationState.currentScenarioIndex;
-    const currentKey = scenarioKeys[indexToUse];
-    const scenarioData = scenarioSimulations[currentKey];
+    const scenarioData = listToUse[indexToUse];
+    if (!scenarioData) {
+      return;
+    }
 
     // Show loading message first
     const loadingMsg = {
@@ -90,6 +143,7 @@ export const useScenarioSimulation = () => {
       // Set waiting for input state and reset attempts
       setSimulationState((prev) => ({
         ...prev,
+        currentScenarioIndex: indexToUse,
         waitingForInput: true,
         attempts: 0,
       }));
@@ -97,7 +151,14 @@ export const useScenarioSimulation = () => {
   };
 
   const handleScenarioComplete = (setMessages) => {
-    const currentKey = scenarioKeys[simulationState.currentScenarioIndex];
+    const listToUse =
+      scenarioList.length > 0 ? scenarioList : defaultScenarioList;
+    const currentScenario = listToUse[simulationState.currentScenarioIndex];
+    const currentKey =
+      currentScenario?.scenarioKey ||
+      currentScenario?.type ||
+      scenarioKeys[simulationState.currentScenarioIndex] ||
+      `scenario_${simulationState.currentScenarioIndex + 1}`;
     const nextIndex = simulationState.currentScenarioIndex + 1;
 
     // Update state first
@@ -108,7 +169,7 @@ export const useScenarioSimulation = () => {
     }));
 
     // Check if all scenarios are completed
-    if (nextIndex >= scenarioKeys.length) {
+    if (nextIndex >= listToUse.length) {
       console.log("All scenarios completed, showing final messages...");
       // Show final completion messages
       setTimeout(() => {
@@ -181,7 +242,7 @@ To wrap things up:
                 actionType: ACTION_TYPES.SIMULATION_COMPLETED,
                 actionDetails: "Simulation completed",
                 completionCode,
-                totalScenarios: scenarioKeys.length,
+                totalScenarios: listToUse.length,
               });
 
               setMessages((prevMessages) => {
@@ -202,7 +263,7 @@ To wrap things up:
     } else {
       // Show next scenario after a delay
       setTimeout(() => {
-        showNextScenario(setMessages, nextIndex);
+        showNextScenario(setMessages, nextIndex, listToUse);
       }, 2000);
     }
   };
@@ -226,13 +287,13 @@ To wrap things up:
     // Support object payloads like { value: "restart" }
     if (option && typeof option === "object" && option.value === "restart") {
       resetSimulationState();
-      startScenarioSimulation(setMessages);
+      startScenarioSimulation(scenarioList, setMessages);
       return true;
     }
 
     if (option === "restart") {
       resetSimulationState();
-      startScenarioSimulation(setMessages);
+      startScenarioSimulation(scenarioList, setMessages);
       return true;
     }
 
@@ -254,8 +315,15 @@ To wrap things up:
     setMessages((prevMessages) => [...prevMessages, userMsg]);
 
     // Process the answer
-    const currentKey = scenarioKeys[simulationState.currentScenarioIndex];
-    const scenarioData = scenarioSimulations[currentKey];
+    const listToUse =
+      scenarioList.length > 0 ? scenarioList : defaultScenarioList;
+    const currentScenario = listToUse[simulationState.currentScenarioIndex];
+    const currentKey =
+      currentScenario?.scenarioKey ||
+      currentScenario?.type ||
+      scenarioKeys[simulationState.currentScenarioIndex] ||
+      `scenario_${simulationState.currentScenarioIndex + 1}`;
+    const scenarioData = currentScenario || scenarioSimulations[currentKey];
     const isAppropriate = checkIfAppropriate(userAnswer, scenarioData);
     const currentAttempt = simulationState.attempts + 1;
 
