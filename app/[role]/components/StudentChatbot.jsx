@@ -9,7 +9,8 @@ import { useChat } from "../hooks/useChat";
 import { useQuestionnaire } from "../hooks/useQuestionnaire";
 import { useScenarioLearning } from "../hooks/useScenarioLearning";
 import { useRouter } from "next/navigation";
-import { useScenarioSimulation } from "../hooks/useScenarioSimulation";
+import { useScenarioSimulationEnhanced } from "../hooks/useScenarioSimulationEnhanced";
+import { useFreeChat } from "../hooks/useFreeChat";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 const StudentChatbot = () => {
@@ -50,7 +51,10 @@ const StudentChatbot = () => {
     handleSimulationOptionSelect,
     handleUserInput,
     resetSimulationState,
-  } = useScenarioSimulation();
+  } = useScenarioSimulationEnhanced();
+
+  const { isFreeChatActive, startFreeChat, sendMessageToAI, endFreeChat } =
+    useFreeChat();
 
   const currentUser = {
     name: "User",
@@ -95,6 +99,12 @@ const StudentChatbot = () => {
       optionSelected: normalized,
       pageVisited: "student",
     });
+
+    // Handle free chat start
+    if (normalized === "start_free_chat") {
+      startFreeChat(setMessages);
+      return;
+    }
 
     // Handle scenario simulation responses
     const simulationResult = handleSimulationOptionSelect(option, setMessages);
@@ -171,14 +181,22 @@ const StudentChatbot = () => {
         <div className="flex-grow p-[40px] flex flex-col justify-center items-center overflow-hidden bg-[url('/bg-gradient.png')] bg-cover bg-center">
           <ChatList
             messages={messages}
-            onSendMessage={(message) =>
-              handleSendMessage(message, handleUserInput)
-            }
+            onSendMessage={(message) => {
+              if (isFreeChatActive) {
+                sendMessageToAI(message, setMessages, setIsLoading);
+              } else {
+                handleSendMessage(message, handleUserInput);
+              }
+            }}
             onOptionSelect={handleOptionSelect}
             isLoading={isLoading}
             currentUser={currentUser}
             pendingInteractiveMessage={pendingInteractiveMessage}
-            scenarioMode={simulationState.waitingForInput}
+            scenarioMode={
+              simulationState.waitingForInput ||
+              isFreeChatActive ||
+              simulationState.isCompletelyDone
+            }
           />
         </div>
       </div>
