@@ -25,6 +25,10 @@
 /user_logs/
 /temp/
 /logs/
+/csv-downloads/
+/csv-downlaods/
+/data_clean_studyt 2
+/data_clean_study2*.csv
 /test-results/
 /playwright-report/
 *.tmp
