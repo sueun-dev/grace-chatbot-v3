@@ -1,192 +1,200 @@
 # grace-chatbot-v3
 
-Next.js 기반 챗봇 서비스(프론트+백엔드 API 동일 서버)이며, 유저 행동을 **raw data**로 CSV에 누적 저장합니다.
+A Next.js chatbot service (single server for both frontend pages and backend API routes) that stores user actions as **raw data** in aggregated CSV files.
 
-## 빠른 시작 (로컬)
+## Research Context
 
-### 1) 의존성 설치
+- Project timeline: **Jan 29, 2025** → **Feb 10, 2026**
+- Developed to support a **Ph.D dissertation** research project
+- Grace Jeonghyun Kim, Ph.D – UMD Directory (https://communication.umd.edu/directory/grace-jeonghyun-kim)  
+  Role: Project Manager & Research Lead
+- Dissertation topic: **APT (Alcohol Prevention Training, 알코올 프리벤션 트레이닝)**
+
+## Quick Start (Local)
+
+### 1) Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2) `.env` 생성 (필수)
+### 2) Create `.env` (required)
 
-이 프로젝트는 `.env.local`이 아니라 **루트의 `.env`**를 기준으로 설정합니다.
+This project uses the repo-root **`.env`** file (not `.env.local`).
 
 ```bash
 cp .env.example .env
 ```
 
-`.env`에 최소한 아래 값을 채워주세요:
+Fill at least:
 
-- `OPENAI_API_KEY` (필수: `/api/chat`, `/api/evaluate-response`에서 사용)
-- `OPENAI_DEFAULT_MODEL` (선택)
-- `DOWNLOAD_TOKEN` (선택이지만 권장: CSV 다운로드 API 보호)
+- `OPENAI_API_KEY` (required; used by `/api/chat`, `/api/evaluate-response`)
+- `OPENAI_DEFAULT_MODEL` (optional)
+- `DOWNLOAD_TOKEN` (optional but recommended; protects CSV download endpoints)
 
-### 3) 개발 서버 실행 (프론트+백엔드 같이 실행)
+### 3) Run the dev server (frontend + backend together)
 
 ```bash
 npm run dev
 ```
 
-- 접속: `http://localhost:3001`
-- `app/`의 페이지와 `app/api/*` API 라우트가 동일 서버에서 동작합니다.
+- URL: `http://localhost:3001`
+- `app/` pages and `app/api/*` routes run on the same server process.
 
-## 운영 실행 (프로덕션)
+## Production Run
 
 ```bash
 npm run build
 PORT=3001 npm run start
 ```
 
-## 실험/운영 진행 흐름 (권장)
+## Recommended Study / Ops Flow
 
-1. 참가자는 `/` 접속 후 `Get Started` → 임의의 코드 입력(참가자 ID)  
-   - 이 값이 `userIdentifier`로 저장되고, CSV의 `user_identifier`에 사용됩니다.
-2. 역할별 챗봇으로 이동
-   - 일반: `/ai-chatbot`
-   - 의료인: `/medical-professional`
-   - 학생: `/student`
-3. 참가자가 설문/시나리오/대화/시뮬레이션을 진행(모든 행동이 raw data로 CSV 누적)
-4. 마지막에 제공되는 completion code가 `completion_code`로 CSV에 저장됨
-5. 관리자는 `/downloadit`에서 로그인 후 CSV/ZIP 다운로드(또는 API로 직접 다운로드)
+1. Participant visits `/`, clicks `Get Started`, then enters an arbitrary code (participant ID).  
+   - This is stored as `userIdentifier` and written to the CSV column `user_identifier`.
+2. Navigate to a role-specific chatbot:
+   - General: `/ai-chatbot`
+   - Medical professional: `/medical-professional`
+   - Student: `/student`
+3. Participant completes questionnaires / scenarios / conversation / simulation (all actions are appended to the aggregated CSV as raw data).
+4. The completion code shown at the end is stored in the CSV column `completion_code`.
+5. Admin logs in at `/downloadit` and downloads CSV/ZIP (or downloads via API).
 
-## CSV 로깅 (핵심)
+## CSV Logging (Core)
 
-### 데이터 수집 sub-url (CSV)
+### Data collection endpoint (CSV)
 
 - **POST** `"/api/log-action"`  
-  클라이언트에서 `utils/clientLogger.js`가 호출하며, 서버에서 CSV로 저장합니다.
-  - 최소 요구값: `actionType` + (`userIdentifier` 또는 `sessionId`)
+  Called by `utils/clientLogger.js` on the client, and persisted as CSV on the server.
+  - Minimum required: `actionType` + (`userIdentifier` or `sessionId`)
 
-### 저장 위치
+### Storage location
 
-- 기본: `user_logs/user_actions.csv`
-- 변경(선택): `.env`에 `CSV_LOG_FILE` 또는 `CSV_LOG_DIR`로 경로 지정 가능  
-  (예: 로드테스트/서버별 경로 분리)
+- Default: `user_logs/user_actions.csv`
+- Optional override: set `CSV_LOG_FILE` or `CSV_LOG_DIR` in `.env`  
+  (e.g., separate paths per server / load-test runs)
 
-### CSV 형태 (1유저 = 1행)
+### CSV shape (1 user = 1 row)
 
-- **1명의 유저 데이터는 CSV 1행에 누적**됩니다.
-- 기본 컬럼(행 고정):
+- **Each user's data is accumulated into a single CSV row.**
+- Fixed columns:
   - `user_key`, `user_identifier`, `chatbot_type`, `risk_level`, `risk_description`, `risk_recommendation`, `total_score`, `action_count`, `completion_code`
-- 행동(액션) raw data 컬럼(행 확장):
-  - 각 액션은 `action_1_*`, `action_2_*` … 형태로 컬럼이 늘어납니다.
-  - 기본 액션 필드: `timestamp`, `session_id`, `action_type`, `action_details`, `question_id`, `response`, `score`, `scenario_type`, `message_content`, `option_selected`, `page_visited`
-  - 추가로 payload에 들어온 커스텀 필드는 자동으로 `snake_case` 변환되어 해당 액션의 컬럼으로 저장됩니다.
+- Action raw-data columns (row expands):
+  - Each action expands columns like `action_1_*`, `action_2_*`, ...
+  - Base action fields: `timestamp`, `session_id`, `action_type`, `action_details`, `question_id`, `response`, `score`, `scenario_type`, `message_content`, `option_selected`, `page_visited`
+  - Any additional custom fields in the payload are automatically converted to `snake_case` and stored as columns for that action.
 
-### completion code 저장 (가장 중요)
+### Completion code storage (most important)
 
-- 최종 완료 시 payload에 `completionCode`(또는 `completion_code`)를 넣으면, 유저 행의 `completion_code` 컬럼에 저장됩니다.
-- 시뮬레이션 완료(`SIMULATION_COMPLETED`) 시점의 completion code도 동일하게 `completion_code`로 누적됩니다.
+- On final completion, include `completionCode` (or `completion_code`) in the payload; it will be stored in the user's `completion_code` column.
+- The completion code at `SIMULATION_COMPLETED` is also accumulated into `completion_code`.
 
-### 동시성/무결성
+### Concurrency / integrity
 
-- CSV는 **파일 락(proper-lockfile)** 으로 동시 write 충돌을 방지하고,
-- 저장은 temp 파일로 쓴 뒤 `rename` 하는 방식(atomic)으로 깨진 CSV가 남지 않도록 처리합니다.
-- `userIdentifier`가 늦게 도착하는 경우를 위해 `sessionId` 기반 임시 행(`__session__...`)에 저장 후, 유저가 식별되면 해당 행을 유저 행으로 **merge**합니다.
+- Uses file locking (**proper-lockfile**) to prevent concurrent write collisions.
+- Writes to a temp file and then atomically `rename`s to avoid leaving corrupted CSV.
+- If `userIdentifier` arrives late, logs are first stored under a temporary `sessionId`-based row (`__session__...`), then merged into the user row once the user is identified.
 
-## CSV 다운로드 (관리용)
+## CSV Downloads (Admin)
 
-> 아래 API는 `DOWNLOAD_TOKEN`으로 보호됩니다(헤더 또는 쿼리). `DOWNLOAD_TOKEN`을 설정하지 않으면 기본값은 `admin` 입니다.
+> These APIs are protected by `DOWNLOAD_TOKEN` (header or query). If `DOWNLOAD_TOKEN` is not set, the default is `admin`.
 
-### 전체 CSV (aggregated) 다운로드
+### Download full aggregated CSV
 
 - **GET** `"/api/download-csv?token=YOUR_TOKEN"`
-- Authorization 헤더도 가능: `Authorization: Bearer YOUR_TOKEN`
+- Authorization header is also supported: `Authorization: Bearer YOUR_TOKEN`
 
-### 특정 유저 1행만 다운로드
+### Download a single user's row
 
 - **GET** `"/api/download-csv?token=YOUR_TOKEN&userId=USER_ID"`
 
-### 여러 챗봇 CSV ZIP 다운로드(있을 때만)
+### Download a ZIP for multiple chatbot CSVs (if available)
 
 - **GET** `"/api/download-all-csv?token=YOUR_TOKEN"`
 
-## 관리자 페이지(`/downloadit`)
+## Admin Page (`/downloadit`)
 
-- 경로: `"/downloadit"`
-- 로그인 검증: **POST** `"/api/admin-auth"`
-- CSV 다운로드는 내부적으로 `"/api/download-csv"`, `"/api/download-all-csv"`를 호출합니다.
-- 관리자 로그인 기본값(하드코딩):
+- Path: `"/downloadit"`
+- Login verification: **POST** `"/api/admin-auth"`
+- CSV downloads internally call `"/api/download-csv"` and `"/api/download-all-csv"`.
+- Default admin credentials (hardcoded):
   - ID: `admin`
   - PW: `grace2024!@#`
 
-## 테스트
+## Tests
 
-### 린트
+### Lint
 
 ```bash
 npm run lint
 ```
 
-### 유닛/통합 테스트(Jest)
+### Unit/integration tests (Jest)
 
 ```bash
 npm test
 ```
 
-### 프론트만 테스트(Jest)
+### Frontend-only tests (Jest)
 
 ```bash
 npm run test:frontend
 ```
 
-### 백엔드만 테스트(Jest)
+### Backend-only tests (Jest)
 
 ```bash
 npm run test:backend
 ```
 
-### DB(CSV)만 테스트(Jest)
+### DB (CSV) tests (Jest)
 
 ```bash
 npm run test:db
 ```
 
-### 300명 동시 CSV 로드 테스트 (실제 형식 시뮬레이션)
+### 300-user concurrent CSV load test (realistic simulation)
 
-> 300명이 거의 동시에 행동 로그를 쌓는 상황을 가정하고, 최종 CSV가 **300행(1유저=1행)** 유지되며 `completion_code`가 모두 채워지는지 검증합니다.
+> Simulates ~300 users logging actions at nearly the same time. Verifies the final CSV stays at **300 rows (1 user = 1 row)** and that `completion_code` is populated for everyone.
 
 ```bash
 RUN_LOAD_TESTS=1 npm run test:backend -- tests/load/csvLoad300.loadtest.test.js
 ```
 
-### 빌드 검증
+### Build
 
 ```bash
 npm run build
 ```
 
-### (선택) E2E 테스트(Playwright)
+### (Optional) E2E tests (Playwright)
 
 ```bash
 npm run test:e2e
 ```
 
-## 주요 폴더 구조
+## Key folders
 
-- `app/`: Next.js App Router(페이지/컴포넌트)
-- `app/api/`: API 라우트(로그 수집, CSV 다운로드 등)
-- `utils/`: CSV 로깅/클라이언트 로깅/설문 등 유틸
-- `tests/`: Jest 테스트(유닛/통합/로드)
-- `user_logs/`: 런타임 CSV 출력(기본 경로, git ignore)
+- `app/`: Next.js App Router (pages/components)
+- `app/api/`: API routes (action logging, CSV downloads, etc.)
+- `utils/`: Utilities for CSV logging, client logging, questionnaires, etc.
+- `tests/`: Jest tests (unit/integration/load)
+- `user_logs/`: Runtime CSV outputs (default path; gitignored)
 
-## 운영/문제 해결 체크리스트
+## Ops / Troubleshooting checklist
 
-- OpenAI 호출이 실패하면: `.env`의 `OPENAI_API_KEY` 확인
-- CSV 저장이 실패하면: 디스크 권한/용량 확인, 락 대기값 조정(`CSV_LOCK_RETRIES`, `CSV_LOCK_STALE_MS`)
-- 포트 충돌이면: `npm run dev`는 3001 사용(스크립트 수정 또는 `PORT` 조정)
+- If OpenAI calls fail: check `OPENAI_API_KEY` in `.env`
+- If CSV persistence fails: check disk permissions/space, tune lock settings (`CSV_LOCK_RETRIES`, `CSV_LOCK_STALE_MS`)
+- If you hit a port conflict: `npm run dev` uses port 3001 by default (edit scripts or adjust `PORT`)
 
-## 보안 참고(선택)
+## Security notes (optional)
 
-- `.env`는 git에 커밋되지 않습니다(`.gitignore`).
-- `DOWNLOAD_TOKEN`을 설정하지 않으면 기본값이 `admin`이라 운영에서는 설정을 권장합니다.
+- `.env` is not committed to git (via `.gitignore`).
+- If `DOWNLOAD_TOKEN` is not set, it defaults to `admin`, so set it in production.
 
 ---
 
-## GCP Deployment Guide (Compute Engine + PM2) (English)
+## GCP Deployment Guide (Compute Engine + PM2)
 
 This project is a single Next.js server that serves **both frontend pages and backend API routes** (`app/` + `app/api/**`). In production, you run **one Node process** (kept alive by PM2).
 
