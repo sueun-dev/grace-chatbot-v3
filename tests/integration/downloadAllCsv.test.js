@@ -105,4 +105,55 @@ describe('/api/download-all-csv', () => {
       fs.rmSync(csvFile, { force: true })
     }
   }, 20000)
+
+  test('uses unique ZIP filenames across consecutive requests', async () => {
+    const runId = `${process.pid}-${Date.now()}`
+    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
+    fs.mkdirSync(outDir, { recursive: true })
+
+    const csvFile = path.join(outDir, `user_actions.unique.${runId}.csv`)
+    fs.writeFileSync(
+      csvFile,
+      [
+        'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
+        'u1,USER1,general-ai,,,,0,0,',
+        '',
+      ].join('\n')
+    )
+
+    const previousEnv = {
+      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
+      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
+    }
+
+    try {
+      process.env.CSV_LOG_FILE = csvFile
+      delete process.env.CSV_LOG_DIR
+      jest.resetModules()
+
+      const { GET } = await import('@/app/api/download-all-csv/route')
+      const first = await GET(
+        createRequest({
+          url: 'http://localhost:3001/api/download-all-csv?token=admin',
+        })
+      )
+      const second = await GET(
+        createRequest({
+          url: 'http://localhost:3001/api/download-all-csv?token=admin',
+        })
+      )
+
+      expect(first.status).toBe(200)
+      expect(second.status).toBe(200)
+      const firstDisposition = first.headers.get('content-disposition')
+      const secondDisposition = second.headers.get('content-disposition')
+      expect(firstDisposition).toContain('attachment; filename="individual_csvs_')
+      expect(secondDisposition).toContain('attachment; filename="individual_csvs_')
+      expect(firstDisposition).not.toBe(secondDisposition)
+    } finally {
+      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
+      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
+      fs.rmSync(csvFile, { force: true })
+    }
+  }, 20000)
 })

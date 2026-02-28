@@ -142,4 +142,45 @@ describe('/api/download-csv uses CSV_LOG_FILE override', () => {
       fs.rmSync(csvFile, { force: true })
     }
   })
+
+  test('sanitizes formula-like cells in CSV download output', async () => {
+    const runId = `${process.pid}-${Date.now()}`
+    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
+    fs.mkdirSync(outDir, { recursive: true })
+
+    const csvFile = path.join(outDir, `user_actions.formula.${runId}.csv`)
+    const content = [
+      'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_response',
+      'USER001,USER001,general-ai,,0,1,,=2+3',
+      '',
+    ].join('\n')
+    fs.writeFileSync(csvFile, content)
+
+    const previousEnv = {
+      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
+      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
+    }
+
+    try {
+      process.env.CSV_LOG_FILE = csvFile
+      delete process.env.CSV_LOG_DIR
+      jest.resetModules()
+
+      const { GET } = await import('@/app/api/download-csv/route')
+      const response = await GET(
+        createRequest({
+          url: 'http://localhost:3001/api/download-csv?token=admin',
+        })
+      )
+
+      expect(response.status).toBe(200)
+      const text = await response.text()
+      expect(text).toContain("'=2+3")
+      expect(text).not.toContain(',=2+3')
+    } finally {
+      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
+      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
+      fs.rmSync(csvFile, { force: true })
+    }
+  })
 })

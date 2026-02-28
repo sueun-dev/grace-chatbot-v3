@@ -435,6 +435,23 @@ describe('Per-user CSV Logger', () => {
       expect(records[0]).toMatchObject({ user_key: 'user1', action_count: '1' })
     })
 
+    test('parses CRLF CSV content without trailing carriage returns', () => {
+      const csvContent = [
+        'user_key,user_identifier,action_count,action_1_action_type',
+        'user1,User One,1,CLICK'
+      ].join('\r\n') + '\r\n'
+      fs.readdirSync.mockReturnValue([])
+      fs.readFileSync.mockReturnValue(csvContent)
+
+      const { headers, records } = getAggregatedCSVData()
+
+      expect(headers).toEqual(expect.arrayContaining(['action_1_action_type']))
+      expect(records).toHaveLength(1)
+      expect(records[0].user_key).toBe('user1')
+      expect(records[0].user_identifier).toBe('User One')
+      expect(records[0].action_1_action_type).toBe('CLICK')
+    })
+
     test('exposes resolved aggregated CSV file path', () => {
       expect(getAggregatedCSVFilePath()).toBe(csvFile)
     })

@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import { getAggregatedCSVData, getUserCsvFilePath } from '@/utils/csvLogger';
+import { getAggregatedCSVData } from '@/utils/csvLogger';
 
 const DOWNLOAD_TOKEN = process.env.DOWNLOAD_TOKEN || 'admin';
+const DANGEROUS_FORMULA_PREFIX = /^[=+\-@]/;
+
+const sanitizeCsvValue = (value) => {
+  const str = value ?? '';
+  if (DANGEROUS_FORMULA_PREFIX.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+};
 
 const escapeCsvValue = (value) => {
-  const str = value ?? '';
+  const str = sanitizeCsvValue(value);
   if (/[",\n]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -42,19 +50,6 @@ export async function GET(request) {
     // If specific user requested return single-row CSV
     if (userId) {
       const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const userFilePath = getUserCsvFilePath(userId);
-      if (fs.existsSync(userFilePath)) {
-        const csvContent = fs.readFileSync(userFilePath, 'utf-8');
-        if (csvContent.trim()) {
-          return new Response(csvContent, {
-            status: 200,
-            headers: {
-              'Content-Type': 'text/csv',
-              'Content-Disposition': `attachment; filename="user_${safeUserId}_matrix_${new Date().toISOString().split('T')[0]}.csv"`,
-            },
-          });
-        }
-      }
 
       const { headers, records } = getAggregatedCSVData();
       const targetRow = records.find(record =>
