@@ -4,6 +4,24 @@ import path from 'path';
 import archiver from 'archiver';
 import { getAggregatedCSVData, listUserCsvFiles } from '@/utils/csvLogger';
 
+const DANGEROUS_FORMULA_PREFIX = /^[=+\-@]/;
+
+const sanitizeCsvValue = (value) => {
+  const str = value ?? '';
+  if (DANGEROUS_FORMULA_PREFIX.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+};
+
+const createZipFileName = () => {
+  const date = new Date();
+  const datePart = date.toISOString().split('T')[0];
+  const timePart = String(date.getTime());
+  const randomPart = Math.random().toString(36).slice(2, 8);
+  return `individual_csvs_${datePart}_${timePart}_${randomPart}.zip`;
+};
+
 export async function GET(request) {
   let tempZipPath = '';
   try {
@@ -32,7 +50,7 @@ export async function GET(request) {
     }
 
     // Create a write stream for the ZIP file
-    const zipFileName = `individual_csvs_${new Date().toISOString().split('T')[0]}.zip`;
+    const zipFileName = createZipFileName();
 
     // Ensure temp directory exists
     const tempDir = path.join(process.cwd(), 'temp');
@@ -76,7 +94,7 @@ export async function GET(request) {
 
     if (records.length > 0) {
       const escapeCsvValue = (value) => {
-        const str = value ?? '';
+        const str = sanitizeCsvValue(value);
         if (/[",\n]/.test(str)) {
           return `"${str.replace(/"/g, '""')}"`;
         }

@@ -186,9 +186,12 @@ const parseCsv = (content) => {
       }
     } else if (char === ',' && !inQuotes) {
       pushField();
-    } else if (char === '\n' && !inQuotes) {
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
       pushField();
       pushRow();
+      if (char === '\r' && content[i + 1] === '\n') {
+        i++;
+      }
     } else {
       current += char;
     }
