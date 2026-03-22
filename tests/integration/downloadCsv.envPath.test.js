@@ -24,6 +24,9 @@ const createRequest = ({ url, headers = {}, method = 'GET' } = {}) => ({
   },
 })
 
+beforeAll(() => { process.env.DOWNLOAD_TOKEN = 'admin' })
+afterAll(() => { delete process.env.DOWNLOAD_TOKEN })
+
 describe('/api/download-csv uses CSV_LOG_FILE override', () => {
   test('returns 404 when resolved file is missing', async () => {
     const runId = `${process.pid}-${Date.now()}`

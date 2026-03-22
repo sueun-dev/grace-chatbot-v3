@@ -388,7 +388,8 @@ describe('useScenarioSimulationEnhanced Hook Tests', () => {
         maxRetries: 3,
         evaluationHistory: [],
         waitingForInput: false,
-        allResponses: []
+        allResponses: [],
+        isCompletelyDone: false,
       })
     })
   })

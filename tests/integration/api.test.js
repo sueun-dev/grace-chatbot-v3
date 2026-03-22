@@ -435,9 +435,15 @@ describe('API Integration Tests', () => {
 
       await logPost(request)
 
+      // Wait for batch flush timer (50ms) + lock acquisition
+      await new Promise(resolve => setTimeout(resolve, 200))
+
       expect(fs.promises.appendFile).toHaveBeenCalled()
-      const [, output] = fs.promises.appendFile.mock.calls.pop()
-      expect(output).toContain('SUBSEQUENT_ACTION')
+      const appendCalls = fs.promises.appendFile.mock.calls
+      const hasAction = appendCalls.some(([, output]) =>
+        typeof output === 'string' && output.includes('SUBSEQUENT_ACTION')
+      )
+      expect(hasAction).toBe(true)
     })
   })
 })
