@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   simulateAIResponse,
   generateTimestamp,
+  generateId,
 } from "../components/chatService";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
@@ -46,7 +47,7 @@ export const useChat = () => {
 
     // Add user message
     const userMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content: userMessage,
       timestamp: generateTimestamp(),
@@ -58,7 +59,7 @@ export const useChat = () => {
     // Show loading state
     setIsLoading(true);
     const loadingMsg = {
-      id: Date.now() + 1,
+      id: generateId(),
       type: "loading",
       timestamp: generateTimestamp(),
       isUser: false,
@@ -69,7 +70,7 @@ export const useChat = () => {
       // Simulate AI response
       const aiResponse = await simulateAIResponse(userMessage, messages);
       const aiMsg = {
-        id: Date.now() + 2,
+        id: generateId(),
         ...aiResponse,
         isUser: false,
       };
@@ -107,7 +108,7 @@ export const useChat = () => {
 
     // Add user's selection as a message
     const userMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content: option,
       timestamp: generateTimestamp(),
@@ -122,7 +123,7 @@ export const useChat = () => {
     // Show loading state
     setIsLoading(true);
     const loadingMsg = {
-      id: Date.now() + 1,
+      id: generateId(),
       type: "loading",
       timestamp: generateTimestamp(),
       isUser: false,
@@ -133,7 +134,7 @@ export const useChat = () => {
       // Simulate AI response based on the option selected
       const aiResponse = await simulateAIResponse(option, messages);
       const aiMsg = {
-        id: Date.now() + 2,
+        id: generateId(),
         ...aiResponse,
         isUser: false,
       };
