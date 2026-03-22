@@ -80,9 +80,7 @@ export const useFreeChat = () => {
         },
         body: JSON.stringify({
           messages: conversationHistory,
-          systemPrompt: `You are a helpful medical training assistant. You're having a conversation with a medical professional in training. 
-          Be professional, informative, and supportive. You can discuss medical topics, provide guidance on patient care, 
-          and help reflect on the training scenarios they've completed. Keep responses concise and relevant.`
+          promptKey: 'medical',
         }),
       });
 

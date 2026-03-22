@@ -80,7 +80,7 @@ describe('API Integration Tests', () => {
         method: 'POST',
         body: {
           messages: [{ role: 'user', content: 'Hello' }],
-          systemPrompt: 'You are a helpful assistant'
+          promptKey: 'default'
         }
       })
 
