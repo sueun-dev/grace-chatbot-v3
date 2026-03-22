@@ -154,7 +154,8 @@ export const useScenarioSimulation = () => {
     const listToUse =
       scenarioList.length > 0 ? scenarioList : defaultScenarioList;
 
-    // Use functional update to read current state, avoiding stale closure
+    // Use functional update to read current state and derive next values
+    let nextIndex;
     setSimulationState((prev) => {
       const currentScenario = listToUse[prev.currentScenarioIndex];
       const currentKey =
@@ -162,16 +163,7 @@ export const useScenarioSimulation = () => {
         currentScenario?.type ||
         scenarioKeys[prev.currentScenarioIndex] ||
         `scenario_${prev.currentScenarioIndex + 1}`;
-      const nextIndex = prev.currentScenarioIndex + 1;
-
-      // Schedule side effects after state update
-      if (nextIndex >= listToUse.length) {
-        _showCompletionMessages(setMessages, listToUse);
-      } else {
-        setTimeout(() => {
-          showNextScenario(setMessages, nextIndex, listToUse);
-        }, 2000);
-      }
+      nextIndex = prev.currentScenarioIndex + 1;
 
       return {
         ...prev,
@@ -179,13 +171,20 @@ export const useScenarioSimulation = () => {
         currentScenarioIndex: nextIndex,
       };
     });
+
+    // Side effects outside updater — React safe
+    if (nextIndex >= listToUse.length) {
+      _showCompletionMessages(setMessages, listToUse);
+    } else {
+      setTimeout(() => {
+        showNextScenario(setMessages, nextIndex, listToUse);
+      }, 2000);
+    }
   };
 
   const _showCompletionMessages = (setMessages, listToUse) => {
-    // Check if all scenarios are completed
-    {
-      // Show final completion messages
-      setTimeout(() => {
+    // Show final completion messages
+    setTimeout(() => {
         const finalAssessmentMsg = {
           id: generateId(),
           type: "completion-message",
@@ -268,7 +267,6 @@ To wrap things up:
           }, 2000);
         }, 1500);
       }, 2000);
-    }
   };
 
   const handleSimulationOptionSelect = (option, setMessages) => {

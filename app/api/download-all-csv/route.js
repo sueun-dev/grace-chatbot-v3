@@ -3,17 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
 import { getAggregatedCSVData, listUserCsvFiles } from '@/utils/csvLogger';
-import { validateSessionToken } from '../admin-auth/route';
-
-const DANGEROUS_FORMULA_PREFIX = /^[=+\-@]/;
-
-const sanitizeCsvValue = (value) => {
-  const str = value ?? '';
-  if (DANGEROUS_FORMULA_PREFIX.test(str)) {
-    return `'${str}`;
-  }
-  return str;
-};
+import { isAuthorized, sanitizeCsvValue, escapeCsvValue } from '@/utils/downloadAuth';
 
 const createZipFileName = () => {
   const date = new Date();
@@ -22,22 +12,6 @@ const createZipFileName = () => {
   const randomPart = Math.random().toString(36).slice(2, 8);
   return `individual_csvs_${datePart}_${timePart}_${randomPart}.zip`;
 };
-
-function isAuthorized(request) {
-  const { searchParams } = new URL(request.url);
-  const authHeader = request.headers.get('authorization');
-  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  if (bearer && validateSessionToken(bearer)) return true;
-
-  const downloadToken = process.env.DOWNLOAD_TOKEN;
-  if (downloadToken) {
-    const token = searchParams.get('token');
-    if (bearer === downloadToken || token === downloadToken) return true;
-  }
-
-  return false;
-}
 
 export async function GET(request) {
   let tempZipPath = '';
@@ -90,18 +64,11 @@ export async function GET(request) {
       return raw.split('\n').map((line) => {
         if (!line.trim()) return line;
         return line.split(',').map((cell) => {
-          // Strip existing quotes, sanitize, re-quote
           let val = cell.trim();
           if (val.startsWith('"') && val.endsWith('"')) {
             val = val.slice(1, -1).replace(/""/g, '"');
           }
-          if (DANGEROUS_FORMULA_PREFIX.test(val)) {
-            val = `'${val}`;
-          }
-          if (/[",\n]/.test(val)) {
-            return `"${val.replace(/"/g, '""')}"`;
-          }
-          return val;
+          return escapeCsvValue(val);
         }).join(',');
       }).join('\n');
     };
@@ -126,14 +93,7 @@ export async function GET(request) {
     });
 
     if (records.length > 0) {
-      const escapeCsvValue = (value) => {
-        const str = sanitizeCsvValue(value);
-        if (/[",\n]/.test(str)) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      };
-      const buildCsvContent = (row) => {
+      const buildSingleRowCsv = (row) => {
         const line = headers.map((header) => escapeCsvValue(row[header] ?? '')).join(',');
         return [headers.map(escapeCsvValue).join(','), line].join('\n') + '\n';
       };
@@ -144,7 +104,7 @@ export async function GET(request) {
           return;
         }
         const name = `users/user_${safeUserKey}.csv`;
-        archive.append(buildCsvContent(record), { name });
+        archive.append(buildSingleRowCsv(record), { name });
       });
     }
     

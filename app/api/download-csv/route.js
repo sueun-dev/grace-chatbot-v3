@@ -1,51 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAggregatedCSVData } from '@/utils/csvLogger';
-import { validateSessionToken } from '../admin-auth/route';
-
-const DANGEROUS_FORMULA_PREFIX = /^[=+\-@]/;
-
-const sanitizeCsvValue = (value) => {
-  const str = value ?? '';
-  if (DANGEROUS_FORMULA_PREFIX.test(str)) {
-    return `'${str}`;
-  }
-  return str;
-};
-
-const escapeCsvValue = (value) => {
-  const str = sanitizeCsvValue(value);
-  if (/[",\n]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-};
-
-const buildCsvContent = (headers, records) => {
-  const lines = [headers.map(escapeCsvValue).join(',')];
-  records.forEach((record) => {
-    const row = headers.map((header) => escapeCsvValue(record[header] ?? ''));
-    lines.push(row.join(','));
-  });
-  return lines.join('\n') + '\n';
-};
-
-function isAuthorized(request) {
-  const { searchParams } = new URL(request.url);
-  const authHeader = request.headers.get('authorization');
-  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  // Check session token (from login)
-  if (bearer && validateSessionToken(bearer)) return true;
-
-  // Check static DOWNLOAD_TOKEN from env (no default fallback)
-  const downloadToken = process.env.DOWNLOAD_TOKEN;
-  if (downloadToken) {
-    const token = searchParams.get('token');
-    if (bearer === downloadToken || token === downloadToken) return true;
-  }
-
-  return false;
-}
+import { isAuthorized, buildCsvContent } from '@/utils/downloadAuth';
 
 export async function GET(request) {
   try {
@@ -56,10 +11,9 @@ export async function GET(request) {
       );
     }
 
-    // Get specific user ID from query params if provided
+    const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
-    // If specific user requested return single-row CSV
     if (userId) {
       const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '_');
 
@@ -86,7 +40,6 @@ export async function GET(request) {
       });
     }
 
-    // Default: stream the aggregated CSV covering all users
     const { headers, records } = getAggregatedCSVData();
     if (!records.length) {
       return NextResponse.json(
@@ -104,7 +57,6 @@ export async function GET(request) {
         'Content-Disposition': `attachment; filename="all_user_interactions_${new Date().toISOString().split('T')[0]}.csv"`,
       },
     });
-    
   } catch (error) {
     console.error('CSV download error:', error);
     return NextResponse.json(
