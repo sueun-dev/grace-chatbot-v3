@@ -184,10 +184,8 @@ export const useScenarioSimulation = () => {
   const _showCompletionMessages = (setMessages, listToUse) => {
     // Check if all scenarios are completed
     {
-      console.log("All scenarios completed, showing final messages...");
       // Show final completion messages
       setTimeout(() => {
-        console.log("Showing completion message 1");
         const finalAssessmentMsg = {
           id: generateId(),
           type: "completion-message",
@@ -200,7 +198,6 @@ export const useScenarioSimulation = () => {
 
         // Show "You're not alone" message
         setTimeout(() => {
-          console.log("Showing 'You're not alone' message");
           const supportMsg = {
             id: generateId(),
             type: "completion-message",
@@ -213,7 +210,6 @@ export const useScenarioSimulation = () => {
 
           // Show training complete message
           setTimeout(() => {
-            console.log("Showing training complete message");
             const trainingCompleteMsg = {
               id: generateId(),
               type: "completion-message",
@@ -233,16 +229,16 @@ To wrap things up:
 
             setMessages((prevMessages) => [...prevMessages, trainingCompleteMsg]);
 
-            // Generate and show random 6-character alphanumeric code
-            setTimeout(() => {
-              console.log("Showing completion code");
-              // Generate random 6-character alphanumeric code
-              const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-              let completionCode = '';
-              for (let i = 0; i < 6; i++) {
-                completionCode += characters.charAt(Math.floor(Math.random() * characters.length));
+            // Fetch completion code from server
+            setTimeout(async () => {
+              let completionCode = 'ERROR';
+              try {
+                const res = await fetch('/api/completion-code', { method: 'POST' });
+                const data = await res.json();
+                completionCode = data.code;
+              } catch {
+                // fallback — should not happen in normal operation
               }
-              console.log("Generated code:", completionCode);
 
               const codeMsg = {
                 id: generateId(),
@@ -260,12 +256,10 @@ To wrap things up:
               });
 
               setMessages((prevMessages) => {
-                console.log("Adding completion code to messages");
                 return [...prevMessages, codeMsg];
               });
 
               // Mark simulation as inactive AFTER all messages are shown
-              console.log("Marking simulation as inactive");
               setSimulationState((prev) => ({
                 ...prev,
                 isActive: false,
