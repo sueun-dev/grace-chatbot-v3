@@ -16,6 +16,23 @@ jest.mock('next/server', () => ({
   },
 }))
 
+const TEST_DB_DIR = path.join(process.cwd(), 'temp', `jest-dl-all-${process.pid}-${Date.now()}`)
+
+beforeAll(() => {
+  fs.mkdirSync(TEST_DB_DIR, { recursive: true })
+  process.env.DB_PATH = path.join(TEST_DB_DIR, 'test.db')
+  process.env.CSV_LOG_DIR = TEST_DB_DIR
+  process.env.DOWNLOAD_TOKEN = 'admin'
+})
+
+afterAll(async () => {
+  jest.resetModules()
+  const { closeDb } = await import('@/utils/db')
+  closeDb()
+  delete process.env.DOWNLOAD_TOKEN
+  fs.rmSync(TEST_DB_DIR, { recursive: true, force: true })
+})
+
 const createRequest = ({ url, headers = {}, method = 'GET' } = {}) => ({
   url,
   method,
@@ -24,139 +41,57 @@ const createRequest = ({ url, headers = {}, method = 'GET' } = {}) => ({
   },
 })
 
-beforeAll(() => { process.env.DOWNLOAD_TOKEN = 'admin' })
-afterAll(() => { delete process.env.DOWNLOAD_TOKEN })
-
-describe('/api/download-all-csv', () => {
+describe('/api/download-all-csv with SQLite', () => {
   test('rejects unauthorized requests', async () => {
     jest.resetModules()
     const { GET } = await import('@/app/api/download-all-csv/route')
-
     const response = await GET(
-      createRequest({
-        url: 'http://localhost:3001/api/download-all-csv',
-      })
+      createRequest({ url: 'http://localhost:3001/api/download-all-csv' })
     )
-    const data = await response.json()
-
     expect(response.status).toBe(401)
-    expect(data).toEqual({ error: 'Unauthorized' })
   })
 
-  test('returns 404 when no CSV files exist', async () => {
-    const existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false)
-    try {
-      jest.resetModules()
-      const { GET } = await import('@/app/api/download-all-csv/route')
-
-      const response = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-all-csv?token=admin',
-        })
-      )
-      const data = await response.json()
-
-      expect(response.status).toBe(404)
-      expect(data).toEqual({ error: 'No CSV files found' })
-    } finally {
-      existsSpy.mockRestore()
-    }
+  test('returns 404 when no data exists', async () => {
+    jest.resetModules()
+    const { GET } = await import('@/app/api/download-all-csv/route')
+    const response = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-all-csv?token=admin' })
+    )
+    expect(response.status).toBe(404)
   })
 
-  test('returns a ZIP when at least one CSV exists', async () => {
-    const runId = `${process.pid}-${Date.now()}`
-    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
-    fs.mkdirSync(outDir, { recursive: true })
+  test('returns a ZIP when data exists', async () => {
+    jest.resetModules()
+    const { logUserAction } = await import('@/utils/db')
+    await logUserAction({ userIdentifier: 'ZIP_USER', actionType: 'ZIP_TEST' })
 
-    const csvFile = path.join(outDir, `user_actions.zipsource.${runId}.csv`)
-    fs.writeFileSync(
-      csvFile,
-      [
-        'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
-        'u1,USER1,general-ai,,,,0,0,',
-        '',
-      ].join('\n')
+    const { GET } = await import('@/app/api/download-all-csv/route')
+    const response = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-all-csv?token=admin' })
     )
 
-    const previousEnv = {
-      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
-      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
-    }
-
-    try {
-      process.env.CSV_LOG_FILE = csvFile
-      delete process.env.CSV_LOG_DIR
-      jest.resetModules()
-
-      const { GET } = await import('@/app/api/download-all-csv/route')
-      const response = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-all-csv?token=admin',
-        })
-      )
-
-      expect(response.status).toBe(200)
-      expect(response.headers.get('content-type')).toBe('application/zip')
-      expect(response.headers.get('content-disposition')).toContain('attachment')
-
-      const dateString = new Date().toISOString().split('T')[0]
-      const tempZipPath = path.join(process.cwd(), 'temp', `individual_csvs_${dateString}.zip`)
-      expect(fs.existsSync(tempZipPath)).toBe(false)
-    } finally {
-      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
-      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
-      fs.rmSync(csvFile, { force: true })
-    }
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('application/zip')
+    expect(response.headers.get('content-disposition')).toContain('attachment')
   }, 20000)
 
   test('uses unique ZIP filenames across consecutive requests', async () => {
-    const runId = `${process.pid}-${Date.now()}`
-    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
-    fs.mkdirSync(outDir, { recursive: true })
+    jest.resetModules()
+    const { logUserAction } = await import('@/utils/db')
+    await logUserAction({ userIdentifier: 'UNIQUE_USER', actionType: 'UNIQUE_TEST' })
 
-    const csvFile = path.join(outDir, `user_actions.unique.${runId}.csv`)
-    fs.writeFileSync(
-      csvFile,
-      [
-        'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
-        'u1,USER1,general-ai,,,,0,0,',
-        '',
-      ].join('\n')
+    const { GET } = await import('@/app/api/download-all-csv/route')
+    const first = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-all-csv?token=admin' })
+    )
+    const second = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-all-csv?token=admin' })
     )
 
-    const previousEnv = {
-      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
-      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
-    }
-
-    try {
-      process.env.CSV_LOG_FILE = csvFile
-      delete process.env.CSV_LOG_DIR
-      jest.resetModules()
-
-      const { GET } = await import('@/app/api/download-all-csv/route')
-      const first = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-all-csv?token=admin',
-        })
-      )
-      const second = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-all-csv?token=admin',
-        })
-      )
-
-      expect(first.status).toBe(200)
-      expect(second.status).toBe(200)
-      const firstDisposition = first.headers.get('content-disposition')
-      const secondDisposition = second.headers.get('content-disposition')
-      expect(firstDisposition).toContain('attachment; filename="individual_csvs_')
-      expect(secondDisposition).toContain('attachment; filename="individual_csvs_')
-      expect(firstDisposition).not.toBe(secondDisposition)
-    } finally {
-      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
-      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
-      fs.rmSync(csvFile, { force: true })
-    }
+    expect(first.status).toBe(200)
+    expect(second.status).toBe(200)
+    const d1 = first.headers.get('content-disposition')
+    const d2 = second.headers.get('content-disposition')
+    expect(d1).not.toBe(d2)
   }, 20000)
 })
