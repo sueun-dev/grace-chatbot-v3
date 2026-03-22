@@ -255,35 +255,18 @@ export const useScenarioSimulationEnhanced = () => {
     return true;
   };
 
-  // Move to next scenario — reads from functional state update to avoid stale closure
+  // Move to next scenario — derive next state via functional update, side effects outside
   const moveToNextScenario = (setMessages, allResponses, evaluationHistory) => {
+    let nextScenario = null;
+    let nextIndex;
+
     setSimulationState((prev) => {
-      const nextIndex = prev.currentScenarioIndex + 1;
-      const nextScenario = prev.scenarios[nextIndex];
-
-      if (nextScenario) {
-        const scenarioMsg = {
-          id: generateId(),
-          type: "scenario-simulation",
-          content: nextScenario.description,
-          scenario: nextScenario,
-          timestamp: generateTimestamp(),
-          isUser: false,
-          requiresInput: true,
-        };
-
-        setMessages((prevMsgs) => [...prevMsgs, scenarioMsg]);
-
-        logAction({
-          actionType: ACTION_TYPES.SIMULATION_STARTED,
-          actionDetails: `Started scenario ${nextIndex + 1}: ${nextScenario.type}`,
-          scenarioType: nextScenario.type
-        });
-      }
+      nextIndex = prev.currentScenarioIndex + 1;
+      nextScenario = prev.scenarios[nextIndex];
 
       return {
         ...prev,
-        currentScenario: prev.scenarios[nextIndex],
+        currentScenario: nextScenario,
         currentScenarioIndex: nextIndex,
         retryCount: 0,
         waitingForInput: true,
@@ -291,6 +274,27 @@ export const useScenarioSimulationEnhanced = () => {
         allResponses: allResponses
       };
     });
+
+    // Side effects outside updater
+    if (nextScenario) {
+      const scenarioMsg = {
+        id: generateId(),
+        type: "scenario-simulation",
+        content: nextScenario.description,
+        scenario: nextScenario,
+        timestamp: generateTimestamp(),
+        isUser: false,
+        requiresInput: true,
+      };
+
+      setMessages((prevMsgs) => [...prevMsgs, scenarioMsg]);
+
+      logAction({
+        actionType: ACTION_TYPES.SIMULATION_STARTED,
+        actionDetails: `Started scenario ${nextIndex + 1}: ${nextScenario.type}`,
+        scenarioType: nextScenario.type
+      });
+    }
   };
 
   // Complete simulation and generate comprehensive CSV

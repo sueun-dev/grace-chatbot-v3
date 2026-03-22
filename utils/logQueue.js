@@ -215,13 +215,33 @@ const triggerFlush = () => {
     });
 };
 
+// Buffer writes in-process, flush to disk with lock periodically
+let writeBatch = [];
+let batchTimer = null;
+const BATCH_FLUSH_MS = 50;
+
+const flushWriteBatch = async () => {
+  batchTimer = null;
+  if (writeBatch.length === 0) return;
+  const lines = writeBatch.join('');
+  writeBatch = [];
+  await withQueueLock(async () => {
+    await fs.promises.appendFile(QUEUE_FILE, lines, 'utf8');
+  });
+};
+
 export const enqueueLogAction = async (payload) => {
   ensureQueueFiles();
   const line = `${JSON.stringify(payload)}\n`;
-  // Use cross-process lock to prevent interleaved writes in multi-process setups
-  await withQueueLock(async () => {
-    await fs.promises.appendFile(QUEUE_FILE, line, 'utf8');
-  });
+  writeBatch.push(line);
+  // Batch writes: acquire cross-process lock once per batch instead of per write
+  if (!batchTimer) {
+    batchTimer = setTimeout(() => {
+      flushWriteBatch().catch((err) => {
+        console.error('Batch write failed', { error: err?.message });
+      });
+    }, BATCH_FLUSH_MS);
+  }
   scheduleFlush();
 };
 
