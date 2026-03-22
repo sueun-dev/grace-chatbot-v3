@@ -12,6 +12,7 @@ const RATE_LIMITS = {
   '/api/log-action': 100,
   '/api/download-csv': 10,
   '/api/download-all-csv': 10,
+  '/api/completion-code': 10,
 };
 
 function getClientIP(request) {
