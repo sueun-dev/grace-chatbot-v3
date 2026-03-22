@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
 import { getAggregatedCSVData, listUserCsvFiles } from '@/utils/csvLogger';
+import { validateSessionToken } from '../admin-auth/route';
 
 const DANGEROUS_FORMULA_PREFIX = /^[=+\-@]/;
 
@@ -22,17 +23,26 @@ const createZipFileName = () => {
   return `individual_csvs_${datePart}_${timePart}_${randomPart}.zip`;
 };
 
+function isAuthorized(request) {
+  const { searchParams } = new URL(request.url);
+  const authHeader = request.headers.get('authorization');
+  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (bearer && validateSessionToken(bearer)) return true;
+
+  const downloadToken = process.env.DOWNLOAD_TOKEN;
+  if (downloadToken) {
+    const token = searchParams.get('token');
+    if (bearer === downloadToken || token === downloadToken) return true;
+  }
+
+  return false;
+}
+
 export async function GET(request) {
   let tempZipPath = '';
   try {
-    const DOWNLOAD_TOKEN = process.env.DOWNLOAD_TOKEN || 'admin';
-    // Check authorization (header or ?token=)
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get('token');
-    const authHeader = request.headers.get('authorization');
-    const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    const authorized = bearer === DOWNLOAD_TOKEN || token === DOWNLOAD_TOKEN;
-    if (!authorized) {
+    if (!isAuthorized(request)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

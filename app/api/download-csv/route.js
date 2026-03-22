@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAggregatedCSVData } from '@/utils/csvLogger';
+import { validateSessionToken } from '../admin-auth/route';
 
-const DOWNLOAD_TOKEN = process.env.DOWNLOAD_TOKEN || 'admin';
 const DANGEROUS_FORMULA_PREFIX = /^[=+\-@]/;
 
 const sanitizeCsvValue = (value) => {
@@ -29,15 +29,27 @@ const buildCsvContent = (headers, records) => {
   return lines.join('\n') + '\n';
 };
 
+function isAuthorized(request) {
+  const { searchParams } = new URL(request.url);
+  const authHeader = request.headers.get('authorization');
+  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  // Check session token (from login)
+  if (bearer && validateSessionToken(bearer)) return true;
+
+  // Check static DOWNLOAD_TOKEN from env (no default fallback)
+  const downloadToken = process.env.DOWNLOAD_TOKEN;
+  if (downloadToken) {
+    const token = searchParams.get('token');
+    if (bearer === downloadToken || token === downloadToken) return true;
+  }
+
+  return false;
+}
+
 export async function GET(request) {
   try {
-    // Check authorization (header or ?token=)
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get('token');
-    const authHeader = request.headers.get('authorization');
-    const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    const authorized = bearer === DOWNLOAD_TOKEN || token === DOWNLOAD_TOKEN;
-    if (!authorized) {
+    if (!isAuthorized(request)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

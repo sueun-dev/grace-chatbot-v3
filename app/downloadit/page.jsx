@@ -49,9 +49,10 @@ export default function DownloadPage() {
 
       const data = await response.json();
 
-      if (response.ok && data?.authenticated) {
+      if (response.ok && data?.authenticated && data?.token) {
         setIsAuthenticated(true);
         sessionStorage.setItem("adminAuth", "true");
+        sessionStorage.setItem("adminToken", data.token);
       } else {
         // Test expectation: invalid credentials show this exact message
         setError("Invalid username or password");
@@ -74,7 +75,7 @@ export default function DownloadPage() {
         method: "GET",
         headers: {
           Authorization:
-            sessionStorage.getItem("adminAuth") === "true" ? "Bearer admin" : "",
+            sessionStorage.getItem("adminToken") ? `Bearer ${sessionStorage.getItem("adminToken")}` : "",
         },
       });
 
@@ -118,7 +119,7 @@ export default function DownloadPage() {
         method: "GET",
         headers: {
           Authorization:
-            sessionStorage.getItem("adminAuth") === "true" ? "Bearer admin" : "",
+            sessionStorage.getItem("adminToken") ? `Bearer ${sessionStorage.getItem("adminToken")}` : "",
         },
       });
 
@@ -154,6 +155,7 @@ export default function DownloadPage() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem("adminAuth");
+    sessionStorage.removeItem("adminToken");
     setUsername("");
     setPassword("");
     setError("");
