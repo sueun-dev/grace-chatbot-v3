@@ -1,3 +1,11 @@
+// Monotonic unique ID generator — avoids collisions from Date.now() in rapid calls
+let _idCounter = 0;
+export const generateId = () => {
+  const now = Date.now();
+  _idCounter += 1;
+  return now * 1000 + (_idCounter % 1000);
+};
+
 // Chat service to simulate AI responses
 export const generateTimestamp = () => {
   return new Date().toLocaleTimeString("en-US", {

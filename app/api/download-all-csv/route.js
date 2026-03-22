@@ -85,11 +85,34 @@ export async function GET(request) {
 
     archive.pipe(output);
 
+    const sanitizeCsvFileContent = (filePath) => {
+      const raw = fs.readFileSync(filePath, 'utf8');
+      return raw.split('\n').map((line) => {
+        if (!line.trim()) return line;
+        return line.split(',').map((cell) => {
+          // Strip existing quotes, sanitize, re-quote
+          let val = cell.trim();
+          if (val.startsWith('"') && val.endsWith('"')) {
+            val = val.slice(1, -1).replace(/""/g, '"');
+          }
+          if (DANGEROUS_FORMULA_PREFIX.test(val)) {
+            val = `'${val}`;
+          }
+          if (/[",\n]/.test(val)) {
+            return `"${val.replace(/"/g, '""')}"`;
+          }
+          return val;
+        }).join(',');
+      }).join('\n');
+    };
+
     const userFileKeys = new Set();
     const sessionFileKeys = new Set();
     filesToAdd.forEach((filePath) => {
       const baseName = path.basename(filePath);
-      archive.file(filePath, { name: `users/${baseName}` });
+      // Sanitize individual CSV files to prevent formula injection
+      const sanitizedContent = sanitizeCsvFileContent(filePath);
+      archive.append(sanitizedContent, { name: `users/${baseName}` });
       if (baseName.startsWith('user_') && baseName.endsWith('.csv')) {
         userFileKeys.add(baseName.slice('user_'.length, -'.csv'.length));
       }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { QUESTIONNAIRE_SCHEMA } from "@/utils/questionnaire";
-import { generateTimestamp } from "../components/chatService";
+import { generateTimestamp, generateId } from "../components/chatService";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useQuestionnaire = () => {
@@ -40,7 +40,7 @@ export const useQuestionnaire = () => {
 
     // Add initial questionnaire message with options
     const initialMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "options",
       content:
         "Hello! I'm Sky, here to provide guidance on alcohol awareness and healthier choices. Before we begin, can I ask a couple of quick questions?",
@@ -61,7 +61,7 @@ export const useQuestionnaire = () => {
     if (!question) return;
 
     const questionMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: question.type,
       content: question.content,
       options: question.options,
@@ -102,7 +102,7 @@ export const useQuestionnaire = () => {
 
     // Show results message
     const resultsMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "results",
       content: `Assessment Complete`,
       riskLevel: riskLevel,
@@ -142,7 +142,7 @@ export const useQuestionnaire = () => {
 
     // Add user's selection as a message
     const userMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content: option.text,
       timestamp: generateTimestamp(),
@@ -157,7 +157,7 @@ export const useQuestionnaire = () => {
         // Show loading state
         setIsLoading(true);
         const loadingMsg = {
-          id: Date.now() + 1,
+          id: generateId(),
           type: "loading",
           timestamp: generateTimestamp(),
           isUser: false,
@@ -177,7 +177,7 @@ export const useQuestionnaire = () => {
       } else {
         // End questionnaire
         const endMsg = {
-          id: Date.now() + 1,
+          id: generateId(),
           type: "text",
           content:
             "Thank you for your time. Feel free to reach out if you have any questions about alcohol awareness in the future.",
@@ -218,7 +218,7 @@ export const useQuestionnaire = () => {
     if (nextQuestionId === "assessment_end") {
       // End assessment early
       const endMsg = {
-        id: Date.now() + 1,
+        id: generateId(),
         type: "text",
         content:
           "Thank you for your time. Feel free to reach out if you have any questions about alcohol awareness in the future.",
@@ -233,7 +233,7 @@ export const useQuestionnaire = () => {
     // Show loading state
     setIsLoading(true);
     const loadingMsg = {
-      id: Date.now() + 1,
+      id: generateId(),
       type: "loading",
       timestamp: generateTimestamp(),
       isUser: false,

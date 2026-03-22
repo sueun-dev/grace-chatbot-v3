@@ -218,7 +218,10 @@ const triggerFlush = () => {
 export const enqueueLogAction = async (payload) => {
   ensureQueueFiles();
   const line = `${JSON.stringify(payload)}\n`;
-  await enqueueFileOp(() => fs.promises.appendFile(QUEUE_FILE, line, 'utf8'));
+  // Use cross-process lock to prevent interleaved writes in multi-process setups
+  await withQueueLock(async () => {
+    await fs.promises.appendFile(QUEUE_FILE, line, 'utf8');
+  });
   scheduleFlush();
 };
 

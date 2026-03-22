@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { generateTimestamp } from "../components/chatService";
+import { generateTimestamp, generateId } from "../components/chatService";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useFreeChat = () => {
@@ -11,7 +11,7 @@ export const useFreeChat = () => {
     setIsFreeChatActive(true);
     
     const welcomeMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content: "You've completed all scenarios! Now you can have a free conversation with me. Feel free to ask any questions about medical practice, patient care, or discuss the scenarios we've covered.",
       timestamp: generateTimestamp(),
@@ -34,7 +34,7 @@ export const useFreeChat = () => {
 
     // Add user message
     const userMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content: userMessage,
       timestamp: generateTimestamp(),
@@ -52,7 +52,7 @@ export const useFreeChat = () => {
     // Show loading
     setIsLoading(true);
     const loadingMsg = {
-      id: Date.now() + 1,
+      id: generateId(),
       type: "loading",
       timestamp: generateTimestamp(),
       isUser: false,
@@ -95,7 +95,7 @@ export const useFreeChat = () => {
       
       // Add AI response
       const aiMsg = {
-        id: Date.now() + 2,
+        id: generateId(),
         type: "text",
         content: aiResponse.content,
         timestamp: generateTimestamp(),
@@ -125,7 +125,7 @@ export const useFreeChat = () => {
       
       // Add error message
       const errorMsg = {
-        id: Date.now() + 2,
+        id: generateId(),
         type: "text",
         content: "I apologize, but I'm having trouble responding right now. Please try again.",
         timestamp: generateTimestamp(),

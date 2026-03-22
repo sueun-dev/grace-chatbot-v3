@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { scenarioSimulations } from "@/utils/questionnaire";
-import { generateTimestamp } from "../components/chatService";
+import { generateTimestamp, generateId } from "../components/chatService";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useScenarioSimulation = () => {
@@ -80,7 +80,7 @@ export const useScenarioSimulation = () => {
 
     // Show intro message
     const introMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content:
         "Great! Now let's practice responding to real-life situations. You'll be presented with different scenarios where someone might pressure you to drink. Practice saying no in a way that feels comfortable for you.",
@@ -115,7 +115,7 @@ export const useScenarioSimulation = () => {
 
     // Show loading message first
     const loadingMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "loading",
       timestamp: generateTimestamp(),
       isUser: false,
@@ -131,7 +131,7 @@ export const useScenarioSimulation = () => {
       );
 
       const scenarioMsg = {
-        id: Date.now() + 1,
+        id: generateId(),
         type: "scenario-simulation",
         scenarioData: scenarioData,
         timestamp: generateTimestamp(),
@@ -153,29 +153,43 @@ export const useScenarioSimulation = () => {
   const handleScenarioComplete = (setMessages) => {
     const listToUse =
       scenarioList.length > 0 ? scenarioList : defaultScenarioList;
-    const currentScenario = listToUse[simulationState.currentScenarioIndex];
-    const currentKey =
-      currentScenario?.scenarioKey ||
-      currentScenario?.type ||
-      scenarioKeys[simulationState.currentScenarioIndex] ||
-      `scenario_${simulationState.currentScenarioIndex + 1}`;
-    const nextIndex = simulationState.currentScenarioIndex + 1;
 
-    // Update state first
-    setSimulationState((prev) => ({
-      ...prev,
-      completedScenarios: [...prev.completedScenarios, currentKey],
-      currentScenarioIndex: nextIndex,
-    }));
+    // Use functional update to read current state, avoiding stale closure
+    setSimulationState((prev) => {
+      const currentScenario = listToUse[prev.currentScenarioIndex];
+      const currentKey =
+        currentScenario?.scenarioKey ||
+        currentScenario?.type ||
+        scenarioKeys[prev.currentScenarioIndex] ||
+        `scenario_${prev.currentScenarioIndex + 1}`;
+      const nextIndex = prev.currentScenarioIndex + 1;
 
+      // Schedule side effects after state update
+      if (nextIndex >= listToUse.length) {
+        _showCompletionMessages(setMessages, listToUse);
+      } else {
+        setTimeout(() => {
+          showNextScenario(setMessages, nextIndex, listToUse);
+        }, 2000);
+      }
+
+      return {
+        ...prev,
+        completedScenarios: [...prev.completedScenarios, currentKey],
+        currentScenarioIndex: nextIndex,
+      };
+    });
+  };
+
+  const _showCompletionMessages = (setMessages, listToUse) => {
     // Check if all scenarios are completed
-    if (nextIndex >= listToUse.length) {
+    {
       console.log("All scenarios completed, showing final messages...");
       // Show final completion messages
       setTimeout(() => {
         console.log("Showing completion message 1");
         const finalAssessmentMsg = {
-          id: Date.now(),
+          id: generateId(),
           type: "completion-message",
           content: "Great job practicing these scenarios! Your answers show self-awareness and healthy decision-making.",
           timestamp: generateTimestamp(),
@@ -188,7 +202,7 @@ export const useScenarioSimulation = () => {
         setTimeout(() => {
           console.log("Showing 'You're not alone' message");
           const supportMsg = {
-            id: Date.now() + 1,
+            id: generateId(),
             type: "completion-message",
             content: "You're not alone in making healthy choices. It's okay to take small steps, ask for help, and keep practicing.",
             timestamp: generateTimestamp(),
@@ -201,7 +215,7 @@ export const useScenarioSimulation = () => {
           setTimeout(() => {
             console.log("Showing training complete message");
             const trainingCompleteMsg = {
-              id: Date.now() + 2,
+              id: generateId(),
               type: "completion-message",
               content: `🎉 You've completed the training!
 
@@ -231,7 +245,7 @@ To wrap things up:
               console.log("Generated code:", completionCode);
 
               const codeMsg = {
-                id: Date.now() + 3,
+                id: generateId(),
                 type: "completion-code",
                 content: completionCode,
                 timestamp: generateTimestamp(),
@@ -259,11 +273,6 @@ To wrap things up:
             }, 1000);
           }, 2000);
         }, 1500);
-      }, 2000);
-    } else {
-      // Show next scenario after a delay
-      setTimeout(() => {
-        showNextScenario(setMessages, nextIndex, listToUse);
       }, 2000);
     }
   };
@@ -305,7 +314,7 @@ To wrap things up:
 
     // Add user's answer as a message
     const userMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content: userAnswer,
       timestamp: generateTimestamp(),
@@ -340,7 +349,7 @@ To wrap things up:
     if (isAppropriate) {
       // Correct answer
       const feedbackMsg = {
-        id: Date.now() + 1,
+        id: generateId(),
         type: "text",
         content: "Nice answer.",
         timestamp: generateTimestamp(),
@@ -358,7 +367,7 @@ To wrap things up:
       if (currentAttempt < 3) {
         // Show hint
         const hintMsg = {
-          id: Date.now() + 1,
+          id: generateId(),
           type: "text",
           content: "Look at the example answer below and try again.",
           timestamp: generateTimestamp(),
@@ -375,7 +384,7 @@ To wrap things up:
       } else {
         // Max attempts reached
         const finalMsg = {
-          id: Date.now() + 1,
+          id: generateId(),
           type: "text",
           content: "That's okay. One possible answer is... Let's keep going.",
           timestamp: generateTimestamp(),

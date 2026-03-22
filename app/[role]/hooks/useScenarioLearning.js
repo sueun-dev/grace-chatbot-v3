@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { scenarioMessages, scenarioQuestions } from "@/utils/scenarioContent";
-import { generateTimestamp } from "../components/chatService";
+import { generateTimestamp, generateId } from "../components/chatService";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useScenarioLearning = () => {
@@ -66,7 +66,7 @@ export const useScenarioLearning = () => {
     if (!scenarioData) return; // Skip if no message exists
 
     const scenarioMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "scenario",
       scenarioData: scenarioData,
       scenarioKey: scenarioKey,
@@ -84,7 +84,7 @@ export const useScenarioLearning = () => {
     if (!questionData) return; // Skip if no question exists
 
     const questionMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "scenario",
       questionData: questionData,
       scenarioKey: scenarioKey,
@@ -118,7 +118,7 @@ export const useScenarioLearning = () => {
 
     // Show completion message and then start scenario simulation
     const completionMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content:
         "Great! You've completed the learning section. Now let's practice what you've learned with some real-life scenarios.",

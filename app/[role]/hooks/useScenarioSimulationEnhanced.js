@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { generateTimestamp } from "../components/chatService";
+import { generateTimestamp, generateId } from "../components/chatService";
 import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
 
 export const useScenarioSimulationEnhanced = () => {
@@ -77,7 +77,7 @@ export const useScenarioSimulationEnhanced = () => {
 
     // Add initial scenario message
     const scenarioMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "scenario-simulation",
       content: firstScenario.description,
       scenario: firstScenario,
@@ -102,7 +102,7 @@ export const useScenarioSimulationEnhanced = () => {
     if (simulationState.isCompletelyDone) {
       // Add user message to show it was sent
       const userMsg = {
-        id: Date.now(),
+        id: generateId(),
         type: "text",
         content: userInput,
         timestamp: generateTimestamp(),
@@ -128,7 +128,7 @@ export const useScenarioSimulationEnhanced = () => {
     
     // Add user message
     const userMsg = {
-      id: Date.now(),
+      id: generateId(),
       type: "text",
       content: userInput,
       timestamp: generateTimestamp(),
@@ -177,7 +177,7 @@ export const useScenarioSimulationEnhanced = () => {
     if (evaluation.isAppropriate) {
       // Response is appropriate, move to next scenario
       const aiMsg = {
-        id: Date.now() + 1,
+        id: generateId(),
         type: "text",
         content: `✅ Good response! ${evaluation.reason}`,
         timestamp: generateTimestamp(),
@@ -203,7 +203,7 @@ export const useScenarioSimulationEnhanced = () => {
         const isLastAttempt = simulationState.retryCount === simulationState.maxRetries - 2;
 
         const retryMsg = {
-          id: Date.now() + 1,
+          id: generateId(),
           type: "options",
           content: `⚠️ ${evaluation.reason}\n\nHere are some suggestions to improve your response:`,
           options: isLastAttempt
@@ -231,7 +231,7 @@ export const useScenarioSimulationEnhanced = () => {
       } else {
         // Max retries reached, move to next scenario
         const maxRetriesMsg = {
-          id: Date.now() + 1,
+          id: generateId(),
           type: "text",
           content: `Maximum attempts (${simulationState.maxRetries}) reached. Moving to next scenario...`,
           timestamp: generateTimestamp(),
@@ -255,38 +255,41 @@ export const useScenarioSimulationEnhanced = () => {
     return true;
   };
 
-  // Move to next scenario
+  // Move to next scenario — reads from functional state update to avoid stale closure
   const moveToNextScenario = (setMessages, allResponses, evaluationHistory) => {
-    const nextIndex = simulationState.currentScenarioIndex + 1;
-    const nextScenario = simulationState.scenarios[nextIndex];
+    setSimulationState((prev) => {
+      const nextIndex = prev.currentScenarioIndex + 1;
+      const nextScenario = prev.scenarios[nextIndex];
 
-    setSimulationState((prev) => ({
-      ...prev,
-      currentScenario: nextScenario,
-      currentScenarioIndex: nextIndex,
-      retryCount: 0,
-      waitingForInput: true,
-      evaluationHistory: evaluationHistory,
-      allResponses: allResponses
-    }));
+      if (nextScenario) {
+        const scenarioMsg = {
+          id: generateId(),
+          type: "scenario-simulation",
+          content: nextScenario.description,
+          scenario: nextScenario,
+          timestamp: generateTimestamp(),
+          isUser: false,
+          requiresInput: true,
+        };
 
-    const scenarioMsg = {
-      id: Date.now(),
-      type: "scenario-simulation",
-      content: nextScenario.description,
-      scenario: nextScenario,
-      timestamp: generateTimestamp(),
-      isUser: false,
-      requiresInput: true,
-    };
+        setMessages((prevMsgs) => [...prevMsgs, scenarioMsg]);
 
-    setMessages((prev) => [...prev, scenarioMsg]);
+        logAction({
+          actionType: ACTION_TYPES.SIMULATION_STARTED,
+          actionDetails: `Started scenario ${nextIndex + 1}: ${nextScenario.type}`,
+          scenarioType: nextScenario.type
+        });
+      }
 
-    // Log new scenario
-    logAction({
-      actionType: ACTION_TYPES.SIMULATION_STARTED,
-      actionDetails: `Started scenario ${nextIndex + 1}: ${nextScenario.type}`,
-      scenarioType: nextScenario.type
+      return {
+        ...prev,
+        currentScenario: prev.scenarios[nextIndex],
+        currentScenarioIndex: nextIndex,
+        retryCount: 0,
+        waitingForInput: true,
+        evaluationHistory: evaluationHistory,
+        allResponses: allResponses
+      };
     });
   };
 
@@ -308,7 +311,7 @@ export const useScenarioSimulationEnhanced = () => {
 
     // 1. Great job message
     const completionMsg1 = {
-      id: Date.now(),
+      id: generateId(),
       type: "completion-message",
       content: "Great job practicing these scenarios! Your answers show self-awareness and healthy decision-making.",
       timestamp: generateTimestamp(),
@@ -319,7 +322,7 @@ export const useScenarioSimulationEnhanced = () => {
     // 2. You're not alone message
     setTimeout(() => {
       const completionMsg2 = {
-        id: Date.now() + 1,
+        id: generateId(),
         type: "completion-message",
         content: "You're not alone in making healthy choices. It's okay to take small steps, ask for help, and keep practicing.",
         timestamp: generateTimestamp(),
@@ -330,7 +333,7 @@ export const useScenarioSimulationEnhanced = () => {
       // 3. Training complete message
       setTimeout(() => {
         const completionMsg3 = {
-          id: Date.now() + 2,
+          id: generateId(),
           type: "completion-message",
           content: `🎉 You've completed the training!
 
@@ -350,7 +353,7 @@ To wrap things up:
         // 4. Completion code
         setTimeout(() => {
           const codeMsg = {
-            id: Date.now() + 3,
+            id: generateId(),
             type: "completion-code",
             content: completionCode,
             timestamp: generateTimestamp(),
@@ -369,7 +372,7 @@ To wrap things up:
       actionType: ACTION_TYPES.SIMULATION_COMPLETED,
       actionDetails: 'Simulation completed',
       completionCode,
-      totalScenarios: simulationState.scenarios.length,
+      totalScenarios: new Set(allResponses.map(r => r.scenario)).size,
       totalResponses: totalResponses,
       appropriateResponses: appropriateCount,
       inappropriateResponses: totalResponses - appropriateCount,
@@ -409,7 +412,7 @@ To wrap things up:
       }));
 
       const retryMsg = {
-        id: Date.now(),
+        id: generateId(),
         type: "text",
         content: "Please try your response again, considering the suggestions provided:",
         timestamp: generateTimestamp(),
