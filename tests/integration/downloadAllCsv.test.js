@@ -24,6 +24,9 @@ const createRequest = ({ url, headers = {}, method = 'GET' } = {}) => ({
   },
 })
 
+beforeAll(() => { process.env.DOWNLOAD_TOKEN = 'admin' })
+afterAll(() => { delete process.env.DOWNLOAD_TOKEN })
+
 describe('/api/download-all-csv', () => {
   test('rejects unauthorized requests', async () => {
     jest.resetModules()

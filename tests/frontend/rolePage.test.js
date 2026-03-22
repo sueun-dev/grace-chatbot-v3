@@ -3,8 +3,10 @@ import { render, screen } from '@testing-library/react'
 import ChatBox from '@/app/[role]/page'
 import { useParams } from 'next/navigation'
 
+const mockRedirect = jest.fn()
 jest.mock('next/navigation', () => ({
   useParams: jest.fn(),
+  redirect: (...args) => { mockRedirect(...args); throw new Error('NEXT_REDIRECT') },
 }))
 
 jest.mock('@/app/[role]/components/AiChatbot', () => () => <div>AI_CHATBOT</div>)
@@ -30,12 +32,10 @@ describe('Role page router', () => {
     expect(screen.getByText('STUDENT_CHATBOT')).toBeInTheDocument()
   })
 
-  test('renders empty shell for unknown role', () => {
+  test('redirects to home for unknown role', () => {
     useParams.mockReturnValue({ role: 'unknown' })
-    render(<ChatBox />)
-    expect(screen.queryByText('AI_CHATBOT')).not.toBeInTheDocument()
-    expect(screen.queryByText('MEDICAL_CHATBOT')).not.toBeInTheDocument()
-    expect(screen.queryByText('STUDENT_CHATBOT')).not.toBeInTheDocument()
+    expect(() => render(<ChatBox />)).toThrow('NEXT_REDIRECT')
+    expect(mockRedirect).toHaveBeenCalledWith('/')
   })
 })
 

@@ -78,7 +78,7 @@ describe('DownloadPage Component Tests', () => {
     test('should handle successful login', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ authenticated: true })
+        json: async () => ({ authenticated: true, token: 'mock-session-token' })
       });
 
       render(<DownloadPage />);
@@ -160,7 +160,7 @@ describe('DownloadPage Component Tests', () => {
     test('should handle logout correctly', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ authenticated: true })
+        json: async () => ({ authenticated: true, token: 'mock-session-token' })
       });
 
       render(<DownloadPage />);
@@ -184,6 +184,7 @@ describe('DownloadPage Component Tests', () => {
 
       expect(screen.getByText('Admin Access Required')).toBeInTheDocument();
       expect(sessionStorageMock.removeItem).toHaveBeenCalledWith('adminAuth');
+      expect(sessionStorageMock.removeItem).toHaveBeenCalledWith('adminToken');
     });
   });
 
@@ -192,7 +193,7 @@ describe('DownloadPage Component Tests', () => {
       // Setup authenticated state
       global.fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ authenticated: true })
+        json: async () => ({ authenticated: true, token: 'mock-session-token' })
       });
 
       render(<DownloadPage />);
@@ -239,7 +240,7 @@ describe('DownloadPage Component Tests', () => {
         expect(global.fetch).toHaveBeenCalledWith('/api/download-csv', {
           method: 'GET',
           headers: {
-            'Authorization': 'Bearer admin'
+            'Authorization': 'Bearer mock-session-token'
           }
         });
 
@@ -287,7 +288,7 @@ describe('DownloadPage Component Tests', () => {
       expect(global.fetch).toHaveBeenCalledWith('/api/download-all-csv', {
         method: 'GET',
         headers: {
-          'Authorization': 'Bearer admin'
+          'Authorization': 'Bearer mock-session-token'
         }
       });
 
@@ -354,7 +355,7 @@ describe('DownloadPage Component Tests', () => {
     test('should navigate back to home from download page', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ authenticated: true })
+        json: async () => ({ authenticated: true, token: 'mock-session-token' })
       });
 
       render(<DownloadPage />);
@@ -391,7 +392,7 @@ describe('DownloadPage Component Tests', () => {
     test('should display correct section headers when authenticated', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ authenticated: true })
+        json: async () => ({ authenticated: true, token: 'mock-session-token' })
       });
 
       render(<DownloadPage />);
@@ -448,7 +449,7 @@ describe('DownloadPage Component Tests', () => {
       // Setup authenticated state
       global.fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ authenticated: true })
+        json: async () => ({ authenticated: true, token: 'mock-session-token' })
       });
 
       render(<DownloadPage />);
@@ -491,7 +492,7 @@ describe('DownloadPage Component Tests', () => {
     test('should handle concurrent download requests', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ authenticated: true })
+        json: async () => ({ authenticated: true, token: 'mock-session-token' })
       });
 
       render(<DownloadPage />);

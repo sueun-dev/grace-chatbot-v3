@@ -8,8 +8,10 @@ jest.mock('@/utils/clientLogger', () => {
   return { ...actual, logAction: jest.fn().mockResolvedValue(undefined) }
 })
 
+let idCounter = 0
 jest.mock('@/app/[role]/components/chatService', () => ({
   generateTimestamp: () => '10:00',
+  generateId: () => ++idCounter,
   simulateAIResponse: jest.fn(),
 }))
 
