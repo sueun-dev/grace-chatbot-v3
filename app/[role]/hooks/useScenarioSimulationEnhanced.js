@@ -295,11 +295,14 @@ export const useScenarioSimulationEnhanced = () => {
 
   // Complete simulation and generate comprehensive CSV
   const completeSimulation = async (setMessages, allResponses) => {
-    // Generate deterministic completion code once (must match what's shown to the user)
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let completionCode = '';
-    for (let i = 0; i < 6; i++) {
-      completionCode += characters.charAt(Math.floor(Math.random() * characters.length));
+    // Fetch completion code from server (crypto-secure, not exposed in console)
+    let completionCode = 'ERROR';
+    try {
+      const res = await fetch('/api/completion-code', { method: 'POST' });
+      const data = await res.json();
+      completionCode = data.code;
+    } catch {
+      // fallback — should not happen in normal operation
     }
 
     // Generate summary
