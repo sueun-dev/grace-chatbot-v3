@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAggregatedCSVData } from '@/utils/csvLogger';
+import { getAggregatedCSVData } from '@/utils/db';
 import { isAuthorized, buildCsvContent } from '@/utils/downloadAuth';
 
 export async function GET(request) {

@@ -13,6 +13,7 @@ const customJestConfig = {
   collectCoverage: true,
   collectCoverageFrom: [
     'utils/csvLogger.js',
+    'utils/db.js',
   ],
   testMatch: [
     '<rootDir>/tests/unit/csvLogger.test.js',

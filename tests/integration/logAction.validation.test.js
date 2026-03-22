@@ -7,11 +7,11 @@ jest.mock('next/server', () => ({
   },
 }))
 
-jest.mock('@/utils/logQueue', () => ({
+jest.mock('@/utils/db', () => ({
   enqueueLogAction: jest.fn(),
 }))
 
-import { enqueueLogAction } from '@/utils/logQueue'
+import { enqueueLogAction } from '@/utils/db'
 import { POST } from '@/app/api/log-action/route'
 
 const createRequest = (rawBody) => ({

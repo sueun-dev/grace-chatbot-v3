@@ -28,21 +28,15 @@ import { GET as downloadGet } from '@/app/api/download-csv/route'
 // Mock OpenAI API
 global.fetch = jest.fn()
 
-// Mock file system for CSV operations
-jest.mock('fs', () => ({
-  existsSync: jest.fn(() => true),
-  mkdirSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  renameSync: jest.fn(),
-  readFileSync: jest.fn(() => [
-    'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
-    'u1,USER1,general-ai,,,,0,0,',
-    '',
-  ].join('\n')),
-  readdirSync: jest.fn(() => []),
-  promises: {
-    appendFile: jest.fn(() => Promise.resolve()),
-  },
+// Mock db module for data operations
+jest.mock('@/utils/db', () => ({
+  enqueueLogAction: jest.fn(() => Promise.resolve()),
+  getAggregatedCSVData: jest.fn(() => ({
+    headers: ['user_key', 'user_identifier', 'chatbot_type', 'risk_level', 'risk_description', 'risk_recommendation', 'total_score', 'action_count', 'completion_code'],
+    records: [
+      { user_key: 'u1', user_identifier: 'USER1', chatbot_type: 'general-ai', risk_level: '', risk_description: '', risk_recommendation: '', total_score: '0', action_count: '0', completion_code: '' }
+    ],
+  })),
 }))
 
 const createRequest = ({ url = 'http://localhost:3001', body, headers = {}, method = 'GET' } = {}) => ({
@@ -402,10 +396,9 @@ describe('API Integration Tests', () => {
     })
   })
 
-  describe('CSV Logging Integration', () => {
-    test('creates aggregated CSV when storage is missing', async () => {
-      const fs = require('fs')
-      fs.existsSync.mockImplementation(() => false)
+  describe('Data Logging Integration', () => {
+    test('enqueues log action via db module', async () => {
+      const { enqueueLogAction } = require('@/utils/db')
 
       const request = createRequest({
         url: 'http://localhost:3001/api/log-action',
@@ -416,34 +409,17 @@ describe('API Integration Tests', () => {
         }
       })
 
-      await logPost(request)
+      const response = await logPost(request)
+      const data = await response.json()
 
-      expect(fs.writeFileSync).toHaveBeenCalled()
-    })
-
-    test('enqueues repeated user actions', async () => {
-      const fs = require('fs')
-
-      const request = createRequest({
-        url: 'http://localhost:3001/api/log-action',
-        method: 'POST',
-        body: {
-          userIdentifier: 'USER002',
-          actionType: 'SUBSEQUENT_ACTION'
-        }
-      })
-
-      await logPost(request)
-
-      // Wait for batch flush timer (50ms) + lock acquisition
-      await new Promise(resolve => setTimeout(resolve, 200))
-
-      expect(fs.promises.appendFile).toHaveBeenCalled()
-      const appendCalls = fs.promises.appendFile.mock.calls
-      const hasAction = appendCalls.some(([, output]) =>
-        typeof output === 'string' && output.includes('SUBSEQUENT_ACTION')
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(enqueueLogAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionType: 'FIRST_ACTION',
+          userIdentifier: 'USER001',
+        })
       )
-      expect(hasAction).toBe(true)
     })
   })
 })

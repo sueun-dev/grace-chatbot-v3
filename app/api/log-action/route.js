@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { enqueueLogAction } from '@/utils/logQueue';
+import { enqueueLogAction } from '@/utils/db';
 
 const MAX_BODY_BYTES = 256 * 1024; // 256KB per log request
 

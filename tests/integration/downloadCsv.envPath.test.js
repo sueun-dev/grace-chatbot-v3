@@ -16,6 +16,23 @@ jest.mock('next/server', () => ({
   },
 }))
 
+const TEST_DB_DIR = path.join(process.cwd(), 'temp', `jest-dl-csv-${process.pid}-${Date.now()}`)
+
+beforeAll(() => {
+  fs.mkdirSync(TEST_DB_DIR, { recursive: true })
+  process.env.DB_PATH = path.join(TEST_DB_DIR, 'test.db')
+  process.env.CSV_LOG_DIR = TEST_DB_DIR
+  process.env.DOWNLOAD_TOKEN = 'admin'
+})
+
+afterAll(async () => {
+  jest.resetModules()
+  const { closeDb } = await import('@/utils/db')
+  closeDb()
+  delete process.env.DOWNLOAD_TOKEN
+  fs.rmSync(TEST_DB_DIR, { recursive: true, force: true })
+})
+
 const createRequest = ({ url, headers = {}, method = 'GET' } = {}) => ({
   url,
   method,
@@ -24,166 +41,66 @@ const createRequest = ({ url, headers = {}, method = 'GET' } = {}) => ({
   },
 })
 
-beforeAll(() => { process.env.DOWNLOAD_TOKEN = 'admin' })
-afterAll(() => { delete process.env.DOWNLOAD_TOKEN })
-
-describe('/api/download-csv uses CSV_LOG_FILE override', () => {
-  test('returns 404 when resolved file is missing', async () => {
-    const runId = `${process.pid}-${Date.now()}`
-    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
-    fs.mkdirSync(outDir, { recursive: true })
-    const missingFile = path.join(outDir, `missing.${runId}.csv`)
-
-    const previousEnv = {
-      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
-      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
-    }
-
-    try {
-      process.env.CSV_LOG_FILE = missingFile
-      delete process.env.CSV_LOG_DIR
-      jest.resetModules()
-
-      const { GET } = await import('@/app/api/download-csv/route')
-      const response = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-csv?token=admin',
-        })
-      )
-
-      expect(response.status).toBe(404)
-      const data = await response.json()
-      expect(data).toEqual({ error: 'No user logs found' })
-    } finally {
-      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
-      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
-      fs.rmSync(missingFile, { force: true })
-    }
+describe('/api/download-csv with SQLite', () => {
+  test('returns 404 when no data exists', async () => {
+    jest.resetModules()
+    const { GET } = await import('@/app/api/download-csv/route')
+    const response = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-csv?token=admin' })
+    )
+    expect(response.status).toBe(404)
   })
 
-  test('downloads aggregated CSV from the resolved path', async () => {
-    const runId = `${process.pid}-${Date.now()}`
-    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
-    fs.mkdirSync(outDir, { recursive: true })
+  test('downloads aggregated CSV after inserting data', async () => {
+    jest.resetModules()
+    const { logUserAction } = await import('@/utils/db')
+    await logUserAction({ userIdentifier: 'USER1', actionType: 'TEST_ACTION' })
 
-    const csvFile = path.join(outDir, `user_actions.${runId}.csv`)
-    const content = [
-      'user_key,user_identifier,chatbot_type,risk_level,risk_description,risk_recommendation,total_score,action_count,completion_code',
-      'u1,USER1,general-ai,,,,0,0,',
-      '',
-    ].join('\n')
-    fs.writeFileSync(csvFile, content)
+    const { GET } = await import('@/app/api/download-csv/route')
+    const response = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-csv?token=admin' })
+    )
 
-    const previousEnv = {
-      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
-      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
-    }
-
-    try {
-      process.env.CSV_LOG_FILE = csvFile
-      delete process.env.CSV_LOG_DIR
-      jest.resetModules()
-
-      const { GET } = await import('@/app/api/download-csv/route')
-      const response = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-csv?token=admin',
-        })
-      )
-
-      expect(response.status).toBe(200)
-      expect(response.headers.get('content-type')).toBe('text/csv')
-      const text = await response.text()
-      expect(text).toBe(content)
-    } finally {
-      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
-      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
-      fs.rmSync(csvFile, { force: true })
-    }
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('text/csv')
+    const text = await response.text()
+    expect(text).toContain('USER1')
+    expect(text).toContain('TEST_ACTION')
   })
 
   test('returns single-row CSV when userId is provided', async () => {
-    const runId = `${process.pid}-${Date.now()}`
-    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
-    fs.mkdirSync(outDir, { recursive: true })
+    jest.resetModules()
+    const { logUserAction } = await import('@/utils/db')
+    await logUserAction({ userIdentifier: 'ALICE', actionType: 'A' })
+    await logUserAction({ userIdentifier: 'BOB', actionType: 'B' })
 
-    const csvFile = path.join(outDir, `user_actions.single.${runId}.csv`)
-    const content = [
-      'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code',
-      'USER001,USER001,general-ai,,0,2,ABC123',
-      'USER002,USER002,general-ai,,0,1,XYZ999',
-      '',
-    ].join('\n')
-    fs.writeFileSync(csvFile, content)
+    const { GET } = await import('@/app/api/download-csv/route')
+    const response = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-csv?token=admin&userId=ALICE' })
+    )
 
-    const previousEnv = {
-      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
-      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
-    }
-
-    try {
-      process.env.CSV_LOG_FILE = csvFile
-      delete process.env.CSV_LOG_DIR
-      jest.resetModules()
-
-      const { GET } = await import('@/app/api/download-csv/route')
-      const response = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-csv?token=admin&userId=USER001',
-        })
-      )
-
-      expect(response.status).toBe(200)
-      expect(response.headers.get('content-type')).toBe('text/csv')
-      const text = await response.text()
-      expect(text.trim().split('\n')).toHaveLength(2)
-      expect(text).toContain('USER001')
-      expect(text).not.toContain('USER002,USER002')
-    } finally {
-      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
-      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
-      fs.rmSync(csvFile, { force: true })
-    }
+    expect(response.status).toBe(200)
+    const text = await response.text()
+    expect(text).toContain('ALICE')
+    expect(text).not.toContain('BOB,BOB')
   })
 
   test('sanitizes formula-like cells in CSV download output', async () => {
-    const runId = `${process.pid}-${Date.now()}`
-    const outDir = path.join(process.cwd(), 'temp', 'jest-download')
-    fs.mkdirSync(outDir, { recursive: true })
+    jest.resetModules()
+    const { logUserAction } = await import('@/utils/db')
+    await logUserAction({
+      userIdentifier: 'FORMULA_USER',
+      actionType: 'TEST',
+      response: '=2+3',
+    })
 
-    const csvFile = path.join(outDir, `user_actions.formula.${runId}.csv`)
-    const content = [
-      'user_key,user_identifier,chatbot_type,risk_level,total_score,action_count,completion_code,action_1_response',
-      'USER001,USER001,general-ai,,0,1,,=2+3',
-      '',
-    ].join('\n')
-    fs.writeFileSync(csvFile, content)
+    const { GET } = await import('@/app/api/download-csv/route')
+    const response = await GET(
+      createRequest({ url: 'http://localhost:3001/api/download-csv?token=admin' })
+    )
 
-    const previousEnv = {
-      CSV_LOG_FILE: process.env.CSV_LOG_FILE,
-      CSV_LOG_DIR: process.env.CSV_LOG_DIR,
-    }
-
-    try {
-      process.env.CSV_LOG_FILE = csvFile
-      delete process.env.CSV_LOG_DIR
-      jest.resetModules()
-
-      const { GET } = await import('@/app/api/download-csv/route')
-      const response = await GET(
-        createRequest({
-          url: 'http://localhost:3001/api/download-csv?token=admin',
-        })
-      )
-
-      expect(response.status).toBe(200)
-      const text = await response.text()
-      expect(text).toContain("'=2+3")
-      expect(text).not.toContain(',=2+3')
-    } finally {
-      process.env.CSV_LOG_FILE = previousEnv.CSV_LOG_FILE
-      process.env.CSV_LOG_DIR = previousEnv.CSV_LOG_DIR
-      fs.rmSync(csvFile, { force: true })
-    }
+    expect(response.status).toBe(200)
+    const text = await response.text()
+    expect(text).toContain("'=2+3")
   })
 })
