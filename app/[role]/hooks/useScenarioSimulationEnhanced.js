@@ -312,7 +312,9 @@ export const useScenarioSimulationEnhanced = () => {
     // Generate summary
     const appropriateCount = allResponses.filter(r => r.isAppropriate).length;
     const totalResponses = allResponses.length;
-    const averageScore = allResponses.reduce((sum, r) => sum + (r.score || 0), 0) / totalResponses;
+    const averageScore = totalResponses > 0
+      ? allResponses.reduce((sum, r) => sum + (r.score || 0), 0) / totalResponses
+      : 0;
 
     // Show 4 completion messages instead of results message
 
@@ -451,7 +453,8 @@ To wrap things up:
       maxRetries: 3,
       evaluationHistory: [],
       waitingForInput: false,
-      allResponses: []
+      allResponses: [],
+      isCompletelyDone: false,
     });
   };
 

@@ -253,13 +253,23 @@ describe('API Integration Tests', () => {
   })
 
   describe('/api/admin-auth', () => {
-    test('should authenticate with correct credentials', async () => {
+    const originalEnv = process.env
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, ADMIN_USERNAME: 'testadmin', ADMIN_PASSWORD: 'testpass123' }
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
+    test('should authenticate with correct credentials and return token', async () => {
       const request = createRequest({
         url: 'http://localhost:3001/api/admin-auth',
         method: 'POST',
         body: {
-          username: 'admin',
-          password: 'grace2024!@#'
+          username: 'testadmin',
+          password: 'testpass123'
         }
       })
 
@@ -267,10 +277,11 @@ describe('API Integration Tests', () => {
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data).toEqual({
-        authenticated: true,
-        message: 'Authentication successful'
-      })
+      expect(data.authenticated).toBe(true)
+      expect(data.message).toBe('Authentication successful')
+      expect(data.token).toBeDefined()
+      expect(typeof data.token).toBe('string')
+      expect(data.token.length).toBeGreaterThan(0)
     })
 
     test('should reject invalid credentials', async () => {
@@ -292,20 +303,47 @@ describe('API Integration Tests', () => {
         message: 'Invalid credentials'
       })
     })
+
+    test('should return 500 when env vars not set', async () => {
+      delete process.env.ADMIN_USERNAME
+      delete process.env.ADMIN_PASSWORD
+
+      const request = createRequest({
+        url: 'http://localhost:3001/api/admin-auth',
+        method: 'POST',
+        body: {
+          username: 'admin',
+          password: 'test'
+        }
+      })
+
+      const response = await authPost(request)
+      expect(response.status).toBe(500)
+    })
   })
 
   describe('/api/download-csv', () => {
+    const originalEnv = process.env
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, DOWNLOAD_TOKEN: 'test-download-token' }
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
     test('should download CSV with proper authorization', async () => {
       const request = createRequest({
         url: 'http://localhost:3001/api/download-csv',
         method: 'GET',
         headers: {
-          authorization: 'Bearer admin'
+          authorization: 'Bearer test-download-token'
         }
       })
 
       const response = await downloadGet(request)
-      
+
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toBe('text/csv')
       expect(response.headers.get('content-disposition')).toContain('attachment')

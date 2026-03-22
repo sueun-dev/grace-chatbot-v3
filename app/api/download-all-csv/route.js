@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
 import { getAggregatedCSVData, listUserCsvFiles } from '@/utils/csvLogger';
-import { isAuthorized, sanitizeCsvValue, escapeCsvValue } from '@/utils/downloadAuth';
+import { isAuthorized, escapeCsvValue } from '@/utils/downloadAuth';
 
 const createZipFileName = () => {
   const date = new Date();

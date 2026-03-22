@@ -1,7 +1,6 @@
 "use client";
 import React from "react";
-import { useParams } from "next/navigation";
-import { notFound } from "next/navigation";
+import { useParams, redirect } from "next/navigation";
 import AiChatbot from "./components/AiChatbot";
 import MedicalProfessionalChatbot from "./components/MedicalProfessionalChatbot";
 import StudentChatbot from "./components/StudentChatbot";
@@ -18,7 +17,7 @@ export default function ChatBox() {
 
   const ChatbotComponent = ROLE_COMPONENTS[role];
   if (!ChatbotComponent) {
-    notFound();
+    redirect("/");
   }
 
   return (
