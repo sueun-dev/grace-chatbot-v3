@@ -12,7 +12,7 @@ const testOpenAIAPI = async () => {
         messages: [
           { role: 'user', content: 'Hello, can you help me?' }
         ],
-        systemPrompt: 'You are a helpful assistant.'
+        promptKey: 'default'
       }),
     });
 
