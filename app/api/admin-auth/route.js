@@ -44,15 +44,17 @@ export async function POST(request) {
       );
     }
 
-    // Constant-time comparison to prevent timing attacks
+    // Reject non-string inputs up front — Buffer.from accepts arrays/numbers
+    // and would otherwise allow an attacker to bypass the length+equality check
+    // by sending e.g. {"username": [97,100,...]}.
     const usernameMatch =
-      username &&
+      typeof username === 'string' &&
       adminUsername.length === username.length &&
-      crypto.timingSafeEqual(Buffer.from(username), Buffer.from(adminUsername));
+      crypto.timingSafeEqual(Buffer.from(username, 'utf8'), Buffer.from(adminUsername, 'utf8'));
     const passwordMatch =
-      password &&
+      typeof password === 'string' &&
       adminPassword.length === password.length &&
-      crypto.timingSafeEqual(Buffer.from(password), Buffer.from(adminPassword));
+      crypto.timingSafeEqual(Buffer.from(password, 'utf8'), Buffer.from(adminPassword, 'utf8'));
 
     if (usernameMatch && passwordMatch) {
       const token = generateSessionToken();

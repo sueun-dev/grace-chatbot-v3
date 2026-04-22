@@ -60,6 +60,32 @@ const generateSessionId = () => {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Fetch a training completion code. The server gates this on recorded
+// activity for the caller's sessionId/userIdentifier, so direct/scripted
+// calls without a real training session will receive 403.
+export const fetchCompletionCode = async () => {
+  let sessionId = '';
+  let userIdentifier = '';
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    sessionId = sessionStorage.getItem('sessionId') || '';
+    userIdentifier = sessionStorage.getItem('userIdentifier') || '';
+  }
+
+  const res = await fetch('/api/completion-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, userIdentifier }),
+  });
+  if (!res.ok) {
+    throw new Error(`completion-code request failed: ${res.status}`);
+  }
+  const data = await res.json();
+  if (!data || typeof data.code !== 'string') {
+    throw new Error('completion-code response malformed');
+  }
+  return data.code;
+};
+
 // Action types for consistent logging
 export const ACTION_TYPES = {
   // Authentication

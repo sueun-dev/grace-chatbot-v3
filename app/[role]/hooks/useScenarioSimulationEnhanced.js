@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { generateTimestamp, generateId } from "../components/chatService";
-import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
+import { logAction, ACTION_TYPES, fetchCompletionCode } from "@/utils/clientLogger";
 
 export const useScenarioSimulationEnhanced = () => {
   const [simulationState, setSimulationState] = useState({
@@ -299,12 +299,11 @@ export const useScenarioSimulationEnhanced = () => {
 
   // Complete simulation and generate comprehensive CSV
   const completeSimulation = async (setMessages, allResponses) => {
-    // Fetch completion code from server (crypto-secure, not exposed in console)
+    // Fetch completion code from server (crypto-secure, not exposed in console).
+    // The server gates this on recorded training activity for this session.
     let completionCode = 'ERROR';
     try {
-      const res = await fetch('/api/completion-code', { method: 'POST' });
-      const data = await res.json();
-      completionCode = data.code;
+      completionCode = await fetchCompletionCode();
     } catch {
       // fallback — should not happen in normal operation
     }

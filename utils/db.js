@@ -71,8 +71,9 @@ const getDb = () => {
   return _db;
 };
 
-// Graceful shutdown
-if (typeof process !== 'undefined') {
+// Graceful shutdown — guard against duplicate registration in dev HMR/test reloads.
+if (typeof process !== 'undefined' && !process.__graceDbCleanupRegistered) {
+  process.__graceDbCleanupRegistered = true;
   const cleanup = () => {
     if (_db) {
       try { _db.close(); } catch {}
@@ -499,4 +500,39 @@ export const closeDb = () => {
     _db.close();
     _db = null;
   }
+};
+
+// Check whether a session or user has any recorded training activity.
+// Used to gate endpoints like completion-code so bots/direct callers that
+// never went through the app cannot harvest codes.
+export const hasRecordedActivity = ({ sessionId, userIdentifier } = {}) => {
+  const db = getDb();
+
+  const trimmedSession = typeof sessionId === 'string' ? sessionId.trim() : '';
+  const trimmedUser = typeof userIdentifier === 'string' ? userIdentifier.trim() : '';
+  if (!trimmedSession && !trimmedUser) return false;
+
+  if (trimmedSession) {
+    const sessionRowKey = getSessionRowKey(trimmedSession);
+    const bySession = db
+      .prepare('SELECT 1 FROM actions WHERE session_id = ? LIMIT 1')
+      .get(trimmedSession);
+    if (bySession) return true;
+    if (sessionRowKey) {
+      const byRowKey = db
+        .prepare('SELECT 1 FROM actions WHERE user_key = ? LIMIT 1')
+        .get(sessionRowKey);
+      if (byRowKey) return true;
+    }
+  }
+
+  if (trimmedUser) {
+    const userKey = sanitizeUserIdentifier(trimmedUser);
+    const byUser = db
+      .prepare('SELECT 1 FROM actions WHERE user_key = ? LIMIT 1')
+      .get(userKey);
+    if (byUser) return true;
+  }
+
+  return false;
 };

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 const fs = require('fs');
 const path = require('path');
 
@@ -27,7 +26,6 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 try {
   // Increase connection pool limits for high-concurrency local tests.
-  // eslint-disable-next-line global-require
   const { Agent, setGlobalDispatcher } = require('undici');
   if (Agent && setGlobalDispatcher) {
     setGlobalDispatcher(

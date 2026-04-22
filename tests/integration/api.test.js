@@ -314,6 +314,36 @@ describe('API Integration Tests', () => {
       const response = await authPost(request)
       expect(response.status).toBe(500)
     })
+
+    // Regression: Buffer.from accepts arrays and numbers. Without a typeof
+    // string gate, a caller could submit byte-array equivalents of the
+    // admin credentials and pass timingSafeEqual. Ensure non-string inputs
+    // are rejected outright.
+    test('should reject non-string username/password (type confusion)', async () => {
+      const adminBytes = [...'testadmin'].map((c) => c.charCodeAt(0))
+      const passBytes = [...'testpass123'].map((c) => c.charCodeAt(0))
+
+      const attacks = [
+        { username: adminBytes, password: passBytes },
+        { username: 'testadmin', password: passBytes },
+        { username: adminBytes, password: 'testpass123' },
+        { username: 9, password: 11 },
+        { username: { toString: () => 'testadmin' }, password: 'testpass123' },
+        { username: null, password: null },
+      ]
+
+      for (const body of attacks) {
+        const request = createRequest({
+          url: 'http://localhost:3001/api/admin-auth',
+          method: 'POST',
+          body,
+        })
+        const response = await authPost(request)
+        expect(response.status).toBe(401)
+        const data = await response.json()
+        expect(data.authenticated).toBe(false)
+      }
+    })
   })
 
   describe('/api/download-csv', () => {

@@ -9,6 +9,25 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [...compat.extends("next/core-web-vitals")];
+const eslintConfig = [
+  { ignores: [".next/**", "node_modules/**", "coverage/**"] },
+  ...compat.extends("next/core-web-vitals"),
+  {
+    // Inline mock components in tests routinely skip displayName — it's harmless
+    // for the purposes of the React rule and adds noise.
+    files: ["tests/**/*.{js,jsx}"],
+    rules: {
+      "react/display-name": "off",
+    },
+  },
+  {
+    // jest.setup.js mocks next/image with a bare <img> — the LCP warning does
+    // not apply in jsdom and the mock must stay primitive.
+    files: ["jest.setup.js"],
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
+];
 
 export default eslintConfig;

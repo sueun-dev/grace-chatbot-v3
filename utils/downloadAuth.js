@@ -1,4 +1,13 @@
+import crypto from 'crypto';
 import { validateSessionToken } from '@/app/api/admin-auth/route';
+
+function timingSafeStringEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 export function isAuthorized(request) {
   const { searchParams } = new URL(request.url);
@@ -12,7 +21,8 @@ export function isAuthorized(request) {
   const downloadToken = process.env.DOWNLOAD_TOKEN;
   if (downloadToken) {
     const token = searchParams.get('token');
-    if (bearer === downloadToken || token === downloadToken) return true;
+    if (timingSafeStringEqual(bearer, downloadToken)) return true;
+    if (timingSafeStringEqual(token, downloadToken)) return true;
   }
 
   return false;

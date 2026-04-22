@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { Readable } from 'stream';
 import archiver from 'archiver';
 import { getAggregatedCSVData } from '@/utils/db';
 import { isAuthorized, escapeCsvValue } from '@/utils/downloadAuth';
@@ -13,8 +12,10 @@ const createZipFileName = () => {
   return `individual_csvs_${datePart}_${timePart}_${randomPart}.zip`;
 };
 
+const sanitizeUserKey = (userKey) =>
+  String(userKey || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+
 export async function GET(request) {
-  let tempZipPath = '';
   try {
     if (!isAuthorized(request)) {
       return NextResponse.json(
@@ -32,55 +33,49 @@ export async function GET(request) {
       );
     }
 
-    const zipFileName = createZipFileName();
-    const tempDir = path.join(process.cwd(), 'temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-
-    tempZipPath = path.join(tempDir, zipFileName);
-
-    const output = fs.createWriteStream(tempZipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
 
-    const archivePromise = new Promise((resolve, reject) => {
-      output.on('close', () => resolve());
-      output.on('error', (err) => reject(err));
-      archive.on('error', (err) => reject(err));
+    // Surface archiver errors on the Node Readable so they propagate to the
+    // Web ReadableStream consumer (the HTTP response writer).
+    archive.on('warning', (err) => {
+      if (err?.code !== 'ENOENT') {
+        console.error('ZIP archive warning:', err);
+      }
+    });
+    archive.on('error', (err) => {
+      console.error('ZIP archive error:', err);
     });
 
-    archive.pipe(output);
-
-    // Generate per-user CSV from SQLite data
+    const headerLine = headers.map(escapeCsvValue).join(',');
     const buildSingleRowCsv = (row) => {
       const line = headers.map((header) => escapeCsvValue(row[header] ?? '')).join(',');
-      return [headers.map(escapeCsvValue).join(','), line].join('\n') + '\n';
+      return `${headerLine}\n${line}\n`;
     };
 
     records.forEach((record) => {
-      const safeUserKey = String(record.user_key || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const name = `users/user_${safeUserKey}.csv`;
-      archive.append(buildSingleRowCsv(record), { name });
+      const safeUserKey = sanitizeUserKey(record.user_key);
+      archive.append(buildSingleRowCsv(record), {
+        name: `users/user_${safeUserKey}.csv`,
+      });
     });
 
-    await archive.finalize();
-    await archivePromise;
+    // Finalize kicks off the archive stream. We don't await it — the stream
+    // will end naturally when archiver finishes writing all entries.
+    archive.finalize().catch((err) => {
+      console.error('ZIP finalize error:', err);
+    });
 
-    const zipContent = fs.readFileSync(tempZipPath);
-    fs.unlinkSync(tempZipPath);
-
-    return new Response(zipContent, {
+    const zipFileName = createZipFileName();
+    return new Response(Readable.toWeb(archive), {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="${zipFileName}"`,
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {
     console.error('ZIP download error:', error);
-    if (tempZipPath && fs.existsSync(tempZipPath)) {
-      try { fs.unlinkSync(tempZipPath); } catch {}
-    }
     return NextResponse.json(
       { error: 'Failed to download ZIP file' },
       { status: 500 }

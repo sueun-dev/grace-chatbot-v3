@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { scenarioSimulations } from "@/utils/questionnaire";
 import { generateTimestamp, generateId } from "../components/chatService";
-import { logAction, ACTION_TYPES } from "@/utils/clientLogger";
+import { logAction, ACTION_TYPES, fetchCompletionCode } from "@/utils/clientLogger";
 
 export const useScenarioSimulation = () => {
   const [simulationState, setSimulationState] = useState({
@@ -228,13 +228,12 @@ To wrap things up:
 
             setMessages((prevMessages) => [...prevMessages, trainingCompleteMsg]);
 
-            // Fetch completion code from server
+            // Fetch completion code from server. The server gates this on
+            // recorded training activity for this session.
             setTimeout(async () => {
               let completionCode = 'ERROR';
               try {
-                const res = await fetch('/api/completion-code', { method: 'POST' });
-                const data = await res.json();
-                completionCode = data.code;
+                completionCode = await fetchCompletionCode();
               } catch {
                 // fallback — should not happen in normal operation
               }
